@@ -1,5 +1,5 @@
-import React, { useState} from 'react';
-import { View, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback } from 'react-native';
 
 const initialPuzzle = [
   [5, 3, null, null, 7, null, null, null, null],
@@ -13,10 +13,13 @@ const initialPuzzle = [
   [null, null, null, null, 8, null, null, 7, 9],
 ];
 
-const SudokuGrid = () => {
-  const [grid, setGrid] = React.useState(initialPuzzle);
+const initialPuzzleCopy = JSON.parse(JSON.stringify(initialPuzzle));
 
+
+const SudokuGrid = () => {
+  const [grid, setGrid] = useState(initialPuzzle);
   const [focusedCell, setFocusedCell] = useState({ row: null, col: null });
+  const [selectedValue, setSelectedValue] = useState(null);
 
   const handleChange = (text, row, col) => {
     const newGrid = [...grid];
@@ -25,38 +28,72 @@ const SudokuGrid = () => {
     setGrid(newGrid);
   };
 
+  const handleCellPress = (row, col) => {
+    setFocusedCell({ row, col });
+    const value = grid[row][col];
+    setSelectedValue(value !== null ? value : null);
+    
+  };
+
   const applyStyles = (rowIndex, colIndex) => {
+    const cellValue = grid[rowIndex][colIndex];
     return [
-                styles.cell,
-                (focusedCell.row === rowIndex || focusedCell.col === colIndex) &&
-                focusedCell.row !== null && focusedCell.col !== null &&
-                styles.relatedCell,
-                focusedCell.row === rowIndex && focusedCell.col === colIndex && styles.focusedCell,
-                (rowIndex % 3 === 2 && rowIndex !== 8) ? styles.bottomBorder : null,
-                (colIndex % 3 === 2 && colIndex !== 8) ? styles.rightBorder : null,
-              ]
-  }
+      styles.cell,
+      (focusedCell.row === rowIndex || focusedCell.col === colIndex) &&
+        focusedCell.row !== null &&
+        focusedCell.col !== null &&
+        styles.relatedCell,
+      focusedCell.row === rowIndex &&
+        focusedCell.col === colIndex &&
+        styles.focusedCell,
+      selectedValue !== null &&
+        cellValue === selectedValue &&
+        styles.sameValueCell,
+      rowIndex % 3 === 2 && rowIndex !== 8 ? styles.bottomBorder : null,
+      colIndex % 3 === 2 && colIndex !== 8 ? styles.rightBorder : null,
+    ];
+  };
 
   return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
     <View style={styles.board}>
       {grid.map((row, rowIndex) => (
         <View key={rowIndex} style={styles.row}>
-          {row.map((cell, colIndex) => (
-            <TextInput
-              key={colIndex}
-              style={applyStyles(rowIndex, colIndex)}
-              value={cell ? cell.toString() : ''}
-              keyboardType="number-pad"
-              maxLength={1}
-              onChangeText={text => handleChange(text, rowIndex, colIndex)}
-              editable={initialPuzzle[rowIndex][colIndex] === null}
-              onFocus={() => setFocusedCell({ row: rowIndex, col: colIndex })}
-              onBlur={() => setFocusedCell({ row: null, col: null })}
-            />
-          ))}
+          {row.map((cell, colIndex) => {
+            const isEditable = initialPuzzleCopy[rowIndex][colIndex] === null;
+
+            if (isEditable) {
+              return (
+                <TextInput
+                  key={colIndex}
+                  style={applyStyles(rowIndex, colIndex)}
+                  value={cell !== null ? cell.toString() : ''}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  onChangeText={text => handleChange(text, rowIndex, colIndex)}
+                  onFocus={() => handleCellPress(rowIndex, colIndex)}
+                  onBlur={() => setFocusedCell({ row: null, col: null })}
+                />
+              );
+            } else {
+              return (
+                <Pressable
+                  key={colIndex}
+                  onPress={() => {
+                    handleCellPress(rowIndex, colIndex);
+                   Keyboard.dismiss();
+                  }}
+                  style={applyStyles(rowIndex, colIndex)}
+                >
+                  <Text style={styles.fixedText}>{cell}</Text>
+                </Pressable>
+              );
+            }
+          })}
         </View>
       ))}
     </View>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -64,8 +101,6 @@ const styles = StyleSheet.create({
   board: {
     flex: 1,
     marginTop: 100,
-    // marginLeft: 5,
-    alignContent: 'space-between',
     padding: 10,
     backgroundColor: '#fff',
   },
@@ -77,20 +112,27 @@ const styles = StyleSheet.create({
     borderColor: '#999',
     width: 40,
     height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
     textAlign: 'center',
     fontSize: 18,
-    backgroundColor: "#ffffff"
+    backgroundColor: '#fff',
   },
-
+  fixedText: {
+    fontSize: 18,
+    textAlign: 'center',
+  },
   focusedCell: {
-    backgroundColor: "#de1"
+    backgroundColor: '#ffeb3b',
   },
   relatedCell: {
-    backgroundColor: "#def"
+    backgroundColor: '#cceeff',
+  },
+  sameValueCell: {
+    backgroundColor: '#aaffaa',
   },
   bottomBorder: {
     borderBottomWidth: 3,
-    height: 43,
   },
   rightBorder: {
     borderRightWidth: 3,

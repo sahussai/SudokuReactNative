@@ -30,7 +30,7 @@ const initialPuzzleCopy = JSON.parse(JSON.stringify(initialPuzzle));
 
 
 const SudokuGrid = () => {
-  const [grid, setGrid] = useState(initialPuzzle);
+  const [grid, setGrid] = useState(JSON.parse(JSON.stringify(initialPuzzle)));
   const [focusedCell, setFocusedCell] = useState({ row: null, col: null });
   const [selectedValue, setSelectedValue] = useState(null);
   const [correctnessGrid, setCorrectnessGrid] = useState(

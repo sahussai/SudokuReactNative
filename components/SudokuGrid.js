@@ -24,22 +24,14 @@ const SudokuGrid = () => {
     const loadPuzzle = async () => {
       try {
         const savedPuzzle = await AsyncStorage.getItem(SUDOKU_PUZZLE_KEY);
-        console.log("Loading puzzle. savedPuzzle is " + savedPuzzle);
-    
-        const parsedPuzzle = savedPuzzle ? JSON.parse(savedPuzzle) : null;
-    
-        if (
-          Array.isArray(parsedPuzzle)
-        ) {
-          setGrid(parsedPuzzle);
-        } else {
-          setGrid(JSON.parse(JSON.stringify(initialPuzzle)));
-        }
+        console.log("Loading puzzle. savedPuzzle is " + savedPuzzle)
+        const initialPuzzleCopy = savedPuzzle ? JSON.parse(savedPuzzle) :  JSON.parse(JSON.stringify(initialPuzzle));
+        setGrid(initialPuzzleCopy);
       } catch (e) {
         console.error('Failed to load puzzle:', e);
-        setGrid(JSON.parse(JSON.stringify(initialPuzzle)));
+      };
+
       }
-    };
     loadPuzzle();
   }, []);
 
@@ -330,3 +322,41 @@ const styles = StyleSheet.create({
 });
 
 export default SudokuGrid;
+
+// import React, { useEffect, useState } from 'react';
+// import { View, Text, Button, StyleSheet } from 'react-native';
+
+// const CounterApp = () => {
+//   const [count, setCount] = useState(0);
+
+//   useEffect(() => {
+//     // Load counter on startup
+//     const loadCount = async () => {
+//       const saved = await AsyncStorage.getItem('counter');
+//       if (saved !== null) {
+//         setCount(Number(saved));
+//       }
+//     };
+//     loadCount();
+//   }, []);
+
+//   const increment = async () => {
+//     const newCount = count + 1;
+//     setCount(newCount);
+//     await AsyncStorage.setItem('counter', newCount.toString());
+//   };
+
+//   return (
+//     <View style={styles.container}>
+//       <Text style={styles.text}>Counter: {count}</Text>
+//       <Button title="Increment" onPress={increment} />
+//     </View>
+//   );
+// };
+
+// export default CounterApp;
+
+// const styles = StyleSheet.create({
+//   container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+//   text: { fontSize: 24, marginBottom: 10 },
+// });

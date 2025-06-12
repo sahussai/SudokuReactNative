@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const initialPuzzle = [
   [5, 3, null, null, 7, null, null, null, null],
@@ -26,24 +27,46 @@ const completedPuzzle = [
 ];
 
 
-const initialPuzzleCopy = JSON.parse(JSON.stringify(initialPuzzle));
+const SUDOKU_PUZZLE_KEY = 'sudokuPuzzle';
+
 
 
 const SudokuGrid = () => {
-  const [grid, setGrid] = useState(JSON.parse(JSON.stringify(initialPuzzle)));
+  const [grid, setGrid] = useState(initialPuzzle);
   const [focusedCell, setFocusedCell] = useState({ row: null, col: null });
   const [selectedValue, setSelectedValue] = useState(null);
   const [correctnessGrid, setCorrectnessGrid] = useState(
     Array(9).fill(null).map(() => Array(9).fill(null))
   );
-  const [notStopped, setNotStopped] = useState(true)
+  const [notStopped, setNotStopped] = useState(true);
+
+  useEffect(() => {
+    const loadPuzzle = async () => {
+      try {
+        const savedPuzzle = await AsyncStorage.getItem(SUDOKU_PUZZLE_KEY);
+        console.log("Loading puzzle. savedPuzzle is " + savedPuzzle)
+        const initialPuzzleCopy = savedPuzzle ? JSON.parse(savedPuzzle) :  JSON.parse(JSON.stringify(initialPuzzle));
+        setGrid(initialPuzzleCopy);
+      } catch (e) {
+        console.error('Failed to load puzzle:', e);
+      };
+
+      }
+    loadPuzzle();
+  }, []);
 
 
-  const handleChange = (text, row, col) => {
+  const handleChange = async (text, row, col) => {
     const newGrid = [...grid];
     const value = parseInt(text);
     newGrid[row][col] = isNaN(value) ? null : value;
     setGrid(newGrid);
+
+    try {
+      await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(newGrid));
+    } catch (e) {
+      console.error('Failed to save puzzle:', e);
+    }
   };
 
   const handleCellPress = (row, col) => {
@@ -77,12 +100,19 @@ const SudokuGrid = () => {
     }
   };
 
-  const resetGame = () => {
-    setGrid(JSON.parse(JSON.stringify(initialPuzzle)));
+  const resetGame = async () => {
+    const initialPuzzleReset = JSON.parse(JSON.stringify(initialPuzzle));
+    setGrid(initialPuzzleReset);
     setFocusedCell({ row: null, col: null });
     setSelectedValue(null);
     setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
     setNotStopped(true);
+
+    try {
+      await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(initialPuzzleReset));
+    } catch (e) {
+      console.error('Failed to save puzzle:', e);
+    }
   };  
   
   const handleFinishedPress = () => {
@@ -159,7 +189,7 @@ const SudokuGrid = () => {
           {grid.map((row, rowIndex) => (
             <View key={rowIndex} style={styles.row}>
               {row.map((cell, colIndex) => {
-                const isEditable = initialPuzzleCopy[rowIndex][colIndex] === null;
+                const isEditable = initialPuzzle[rowIndex][colIndex] === null;
   
                 if (isEditable && notStopped) {
                   return (
@@ -289,3 +319,41 @@ const styles = StyleSheet.create({
 });
 
 export default SudokuGrid;
+
+// import React, { useEffect, useState } from 'react';
+// import { View, Text, Button, StyleSheet } from 'react-native';
+
+// const CounterApp = () => {
+//   const [count, setCount] = useState(0);
+
+//   useEffect(() => {
+//     // Load counter on startup
+//     const loadCount = async () => {
+//       const saved = await AsyncStorage.getItem('counter');
+//       if (saved !== null) {
+//         setCount(Number(saved));
+//       }
+//     };
+//     loadCount();
+//   }, []);
+
+//   const increment = async () => {
+//     const newCount = count + 1;
+//     setCount(newCount);
+//     await AsyncStorage.setItem('counter', newCount.toString());
+//   };
+
+//   return (
+//     <View style={styles.container}>
+//       <Text style={styles.text}>Counter: {count}</Text>
+//       <Button title="Increment" onPress={increment} />
+//     </View>
+//   );
+// };
+
+// export default CounterApp;
+
+// const styles = StyleSheet.create({
+//   container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+//   text: { fontSize: 24, marginBottom: 10 },
+// });

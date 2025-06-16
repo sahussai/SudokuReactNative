@@ -2,29 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generateSudokuPuzzle } from './sudokuGenerator';
 
-const initialPuzzle = [
-  [5, 3, null, null, 7, null, null, null, null],
-  [6, null, null, 1, 9, 5, null, null, null],
-  [null, 9, 8, null, null, null, null, 6, null],
-  [8, null, null, null, 6, null, null, null, 3],
-  [4, null, null, 8, null, 3, null, null, 1],
-  [7, null, null, null, 2, null, null, null, 6],
-  [null, 6, null, null, null, null, 2, 8, null],
-  [null, null, null, 4, 1, 9, null, null, 5],
-  [null, null, null, null, 8, null, null, 7, 9],
-];
-const completedPuzzle = [
-  [5, 3, 4, 6, 7, 8, 9, 1, 2],
-  [6, 7, 2, 1, 9, 5, 3, 4, 8],
-  [1, 9, 8, 3, 4, 2, 5, 6, 7],
-  [8, 5, 9, 7, 6, 1, 4, 2, 3],
-  [4, 2, 6, 8, 5, 3, 7, 9, 1],
-  [7, 1, 3, 9, 2, 4, 8, 5, 6],
-  [9, 6, 1, 5, 3, 7, 2, 8, 4],
-  [2, 8, 7, 4, 1, 9, 6, 3, 5],
-  [3, 4, 5, 2, 8, 6, 1, 7, 9],
-];
+const { puzzle: initialPuzzle, completedPuzzle } = generateSudokuPuzzle(25);
 
 
 const SUDOKU_PUZZLE_KEY = 'sudokuPuzzle';
@@ -233,6 +213,27 @@ const SudokuGrid = () => {
           ))}
         </View>
       </View>
+      <View style={{ flex: 1 }}>
+      {!notStopped && (
+        <Pressable
+          style={[styles.topButton, { alignSelf: 'center', marginTop: 20 }]}
+          onPress={() => {
+            const { puzzle: newPuzzle, completedPuzzle: newSolution } = generateSudokuPuzzle(25);
+            setGrid(newPuzzle);
+            setCompletedPuzzle(newSolution);
+            setInitialPuzzle(JSON.parse(JSON.stringify(newPuzzle)));
+            setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
+            setNotStopped(true);
+            setFocusedCell({ row: null, col: null });
+            setSelectedValue(null);
+          }}
+        >
+          <Text style={styles.buttonText}>New Puzzle</Text>
+        </Pressable>
+      )}
+      </View>
+
+
     </TouchableWithoutFeedback>
   );
   

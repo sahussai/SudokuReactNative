@@ -1,13 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
-<<<<<<< HEAD
-import { generateSudokuPuzzle } from './sudokuGenerator';
-=======
 import AsyncStorage from '@react-native-async-storage/async-storage';
->>>>>>> 4f767335cdcb5a5d12f9bac1644a19b3350757f8
 
-const { puzzle: initialPuzzle, completedPuzzle } = generateSudokuPuzzle(25);
+const initialPuzzle = [
+  [5, 3, null, null, 7, null, null, null, null],
+  [6, null, null, 1, 9, 5, null, null, null],
+  [null, 9, 8, null, null, null, null, 6, null],
+  [8, null, null, null, 6, null, null, null, 3],
+  [4, null, null, 8, null, 3, null, null, 1],
+  [7, null, null, null, 2, null, null, null, 6],
+  [null, 6, null, null, null, null, 2, 8, null],
+  [null, null, null, 4, 1, 9, null, null, 5],
+  [null, null, null, null, 8, null, null, 7, 9],
+];
+const completedPuzzle = [
+  [5, 3, 4, 6, 7, 8, 9, 1, 2],
+  [6, 7, 2, 1, 9, 5, 3, 4, 8],
+  [1, 9, 8, 3, 4, 2, 5, 6, 7],
+  [8, 5, 9, 7, 6, 1, 4, 2, 3],
+  [4, 2, 6, 8, 5, 3, 7, 9, 1],
+  [7, 1, 3, 9, 2, 4, 8, 5, 6],
+  [9, 6, 1, 5, 3, 7, 2, 8, 4],
+  [2, 8, 7, 4, 1, 9, 6, 3, 5],
+  [3, 4, 5, 2, 8, 6, 1, 7, 9],
+];
 
 
 const SUDOKU_PUZZLE_KEY = 'sudokuPuzzle';
@@ -60,22 +77,22 @@ const SudokuGrid = () => {
 
   const checkPuzzle = () => {
     const newCorrectnessGrid = Array(9).fill(null).map(() => Array(9).fill(null));
-    let numberOfCorrect = 0;
-    setNotStopped(false);
     let hasError = false;
-  
+
     for (let row = 0; row < 9; row++) {
       for (let col = 0; col < 9; col++) {
         if (grid[row][col] === completedPuzzle[row][col]) {
           newCorrectnessGrid[row][col] = true;
-          numberOfCorrect++;
         } else {
           newCorrectnessGrid[row][col] = false;
           hasError = true;
         }
       }
     }
+
     setCorrectnessGrid(newCorrectnessGrid);
+    setNotStopped(false);
+
     if (hasError) {
       alert('Some answers are incorrect.');
     } else {
@@ -103,21 +120,11 @@ const SudokuGrid = () => {
       'Confirm Completion',
       'Are you sure you want to finish and check your answers?',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Confirm',
-          onPress: checkPuzzle,
-          style: 'destructive',
-        },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Confirm', onPress: checkPuzzle, style: 'destructive' },
       ]
     );
   };
-  
-  
-  
 
   const applyStyles = (rowIndex, colIndex) => {
     const cellValue = grid[rowIndex][colIndex];
@@ -126,9 +133,9 @@ const SudokuGrid = () => {
       focusedCell.col !== null &&
       Math.floor(rowIndex / 3) === Math.floor(focusedCell.row / 3) &&
       Math.floor(colIndex / 3) === Math.floor(focusedCell.col / 3);
-  
+
     const isCorrect = correctnessGrid[rowIndex][colIndex];
-  
+
     return [
       styles.cell,
       (focusedCell.row === rowIndex || focusedCell.col === colIndex || inSameBox) &&
@@ -147,8 +154,6 @@ const SudokuGrid = () => {
       isCorrect === false && styles.incorrectCell,
     ];
   };
-  
-  
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -156,18 +161,17 @@ const SudokuGrid = () => {
         <View style={styles.topBar}>
           <View style={styles.leftHeader}>
             <Text style={styles.title}>Sudoku App</Text>
-            <Text style={styles.level}>Level 1</Text>
           </View>
           <View style={styles.rightButtons}>
             <Pressable onPress={resetGame} style={styles.topButton}>
-            <AntDesign name="reload1" size={24} color="white" />
+              <AntDesign name="reload1" size={24} color="white" />
             </Pressable>
             <Pressable onPress={handleFinishedPress} style={styles.topButton}>
               <AntDesign name="check" size={24} color="white" />
             </Pressable>
           </View>
         </View>
-  
+
         <View style={styles.board}>
           {grid.map((row, rowIndex) => (
             <View key={rowIndex} style={styles.row}>
@@ -205,31 +209,17 @@ const SudokuGrid = () => {
             </View>
           ))}
         </View>
-      </View>
-      <View style={{ flex: 1 }}>
-      {!notStopped && (
-        <Pressable
-          style={[styles.topButton, { alignSelf: 'center', marginTop: 20 }]}
-          onPress={() => {
-            const { puzzle: newPuzzle, completedPuzzle: newSolution } = generateSudokuPuzzle(25);
-            setGrid(newPuzzle);
-            setCompletedPuzzle(newSolution);
-            setInitialPuzzle(JSON.parse(JSON.stringify(newPuzzle)));
-            setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
-            setNotStopped(true);
-            setFocusedCell({ row: null, col: null });
-            setSelectedValue(null);
-          }}
-        >
-          <Text style={styles.buttonText}>New Puzzle</Text>
-        </Pressable>
-      )}
-      </View>
 
-
+        {!notStopped && (
+          <View style={{ alignItems: 'center', marginBottom: 20 }}>
+            <Pressable onPress={generateNewPuzzle} style={styles.topButton}>
+              <Text style={styles.buttonText}>New Puzzle</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
     </TouchableWithoutFeedback>
   );
-  
 };
 
 const styles = StyleSheet.create({
@@ -272,9 +262,6 @@ const styles = StyleSheet.create({
   rightBorder: {
     borderRightWidth: 3,
   },
-  boxHighlight: {
-    backgroundColor: '#fceabb',
-  },  
   correctCell: {
     backgroundColor: '#ccffcc',
   },
@@ -299,10 +286,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-  level: {
-    fontSize: 14,
-    color: '#666',
-  },
   rightButtons: {
     flexDirection: 'row',
     gap: 2,
@@ -319,7 +302,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
-  
 });
 
 export default SudokuGrid;

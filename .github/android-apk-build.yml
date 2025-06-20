@@ -4,7 +4,7 @@ on:
   # Specify when you want the build to run here
   push:
     branches:
-      - master
+      - main
 jobs:
   build:
     runs-on: ubuntu-latest

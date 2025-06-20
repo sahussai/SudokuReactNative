@@ -70,11 +70,13 @@ const SudokuGrid = () => {
       }
     }
     setCorrectnessGrid(newCorrectnessGrid);
-    if (hasError) {
-      alert('Some answers are incorrect.');
-    } else {
-      alert('All correct! Well done!');
-    }
+
+    Alert.alert(
+    'Results:',
+      hasError ? 'Some answers are incorrect.' : 'All correct! Well done!',
+      { cancelable: false }
+    )
+    
   };
 
   const resetGame = () => {

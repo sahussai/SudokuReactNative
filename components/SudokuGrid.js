@@ -9,32 +9,83 @@ const { puzzle: initialPuzzle, completedPuzzle } = generateSudokuPuzzle(25);
 
 const SUDOKU_PUZZLE_KEY = 'sudokuPuzzle';
 
-
-
 const SudokuGrid = () => {
-  const [grid, setGrid] = useState(initialPuzzle);
-  const [focusedCell, setFocusedCell] = useState({ row: null, col: null });
-  const [selectedValue, setSelectedValue] = useState(null);
+  const [grid, setGrid] = useState(null);
+  const [initialPuzzle, setInitialPuzzle] = useState(null);
+  const [completedPuzzle, setCompletedPuzzle] = useState(null);
   const [correctnessGrid, setCorrectnessGrid] = useState(
     Array(9).fill(null).map(() => Array(9).fill(null))
   );
+  const [focusedCell, setFocusedCell] = useState({ row: null, col: null });
+  const [selectedValue, setSelectedValue] = useState(null);
   const [notStopped, setNotStopped] = useState(true);
 
   useEffect(() => {
-    const loadPuzzle = async () => {
+    const loadOrGeneratePuzzle = async () => {
       try {
-        const savedPuzzle = await AsyncStorage.getItem(SUDOKU_PUZZLE_KEY);
-        console.log("Loading puzzle. savedPuzzle is " + savedPuzzle)
-        const initialPuzzleCopy = savedPuzzle ? JSON.parse(savedPuzzle) :  JSON.parse(JSON.stringify(initialPuzzle));
-        setGrid(initialPuzzleCopy);
+        const savedData = await AsyncStorage.getItem(SUDOKU_PUZZLE_KEY);
+  
+        if (savedData) {
+          console.log("Loading Puzzle and Completed: ",puzzle, "\n\n", completedPuzzle);
+          const { puzzle, completedPuzzle: solution, initialPuzzle: initialPuzzle } = JSON.parse(savedData);
+          setGrid(puzzle);
+          setInitialPuzzle(initialPuzzle);
+          setCompletedPuzzle(solution);
+        } else {
+          generateNewPuzzle();
+        }
       } catch (e) {
         console.error('Failed to load puzzle:', e);
-      };
-
+        generateNewPuzzle();
       }
-    loadPuzzle();
+    };
+  
+    loadOrGeneratePuzzle();
   }, []);
+  
 
+  const generateNewPuzzle = () => {
+    const { puzzle, completedPuzzle: solution } = generateSudokuPuzzle(35);
+    setGrid(puzzle);
+    setInitialPuzzle(JSON.parse(JSON.stringify(puzzle)));
+    setCompletedPuzzle(solution);
+    setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
+    setNotStopped(true);
+    setFocusedCell({ row: null, col: null });
+    setSelectedValue(null);
+
+    // Save both to AsyncStorage
+    console.log("Saved Puzzle and Completed: ",puzzle, "\n\n",completedPuzzle);
+    AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify({
+      puzzle,
+      completedPuzzle: solution,
+      initialPuzzle: puzzle,
+    })).catch(err =>
+      console.error('Failed to save puzzle:', err)
+    );
+  };
+
+  const resetGame = async () => {
+    const reset = JSON.parse(JSON.stringify(initialPuzzle));
+    setGrid(reset);
+    setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
+    setNotStopped(true);
+    setFocusedCell({ row: null, col: null });
+    setSelectedValue(null);
+
+    try {
+      await AsyncStorage.setItem(
+        SUDOKU_PUZZLE_KEY,
+        JSON.stringify({
+          puzzle: reset,
+          completedPuzzle: completedPuzzle,
+          initialPuzzle: reset,
+        })
+      );
+    } catch (e) {
+      console.error('Failed to save puzzle:', e);
+    }
+  };
 
   const handleChange = async (text, row, col) => {
     const newGrid = [...grid];
@@ -43,33 +94,37 @@ const SudokuGrid = () => {
     setGrid(newGrid);
 
     try {
-      await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(newGrid));
+      await AsyncStorage.setItem(
+        SUDOKU_PUZZLE_KEY,
+        JSON.stringify({
+          puzzle: newGrid,
+          completedPuzzle: completedPuzzle, // make sure this is the current one!
+          initialPuzzle: initialPuzzle,
+        })
+      );
     } catch (e) {
       console.error('Failed to save puzzle:', e);
     }
   };
 
-  const handleCellPress = (row, col) => {
-    setFocusedCell({ row, col });
-    const value = grid[row][col];
-    setSelectedValue(value !== null ? value : null);
-  };
 
   const checkPuzzle = () => {
     const newCorrectnessGrid = Array(9).fill(null).map(() => Array(9).fill(null));
+    let numberOfCorrect = 0;
+    setNotStopped(false);
     let hasError = false;
-
+  
     for (let row = 0; row < 9; row++) {
       for (let col = 0; col < 9; col++) {
         if (grid[row][col] === completedPuzzle[row][col]) {
           newCorrectnessGrid[row][col] = true;
+          numberOfCorrect++;
         } else {
           newCorrectnessGrid[row][col] = false;
           hasError = true;
         }
       }
     }
-
     setCorrectnessGrid(newCorrectnessGrid);
 
     Alert.alert(
@@ -82,33 +137,23 @@ const SudokuGrid = () => {
     )
   };
 
-  const resetGame = async () => {
-    const initialPuzzleReset = JSON.parse(JSON.stringify(initialPuzzle));
-    setGrid(initialPuzzleReset);
-    setFocusedCell({ row: null, col: null });
-    setSelectedValue(null);
-    setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
-    setNotStopped(true);
-
-    try {
-      await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(initialPuzzleReset));
-    } catch (e) {
-      console.error('Failed to save puzzle:', e);
-    }
-  };  
-  
   const handleFinishedPress = () => {
     Alert.alert(
       'Confirm Completion',
       'Are you sure you want to finish and check your answers?',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Confirm', onPress: checkPuzzle, style: 'destructive' },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Confirm',
+          onPress: checkPuzzle,
+          style: 'destructive',
+        },
       ]
     );
   };
-  
-  
   
 
   const applyStyles = (rowIndex, colIndex) => {
@@ -118,9 +163,9 @@ const SudokuGrid = () => {
       focusedCell.col !== null &&
       Math.floor(rowIndex / 3) === Math.floor(focusedCell.row / 3) &&
       Math.floor(colIndex / 3) === Math.floor(focusedCell.col / 3);
-
+  
     const isCorrect = correctnessGrid[rowIndex][colIndex];
-
+  
     return [
       styles.cell,
       (focusedCell.row === rowIndex || focusedCell.col === colIndex || inSameBox) &&
@@ -139,6 +184,8 @@ const SudokuGrid = () => {
       isCorrect === false && styles.incorrectCell,
     ];
   };
+  
+  
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -146,23 +193,23 @@ const SudokuGrid = () => {
         <View style={styles.topBar}>
           <View style={styles.leftHeader}>
             <Text style={styles.title}>Sudoku App</Text>
+            <Text style={styles.level}>Level 1</Text>
           </View>
           <View style={styles.rightButtons}>
             <Pressable onPress={resetGame} style={styles.topButton}>
-              <AntDesign name="reload1" size={24} color="white" />
+            <AntDesign name="reload1" size={24} color="white" />
             </Pressable>
             <Pressable onPress={handleFinishedPress} style={styles.topButton}>
               <AntDesign name="check" size={24} color="white" />
             </Pressable>
           </View>
         </View>
-
+  
         <View style={styles.board}>
           {grid.map((row, rowIndex) => (
             <View key={rowIndex} style={styles.row}>
               {row.map((cell, colIndex) => {
                 const isEditable = initialPuzzle[rowIndex][colIndex] === null;
-  
                 if (isEditable && notStopped) {
                   return (
                     <TextInput
@@ -194,17 +241,31 @@ const SudokuGrid = () => {
             </View>
           ))}
         </View>
-
-        {!notStopped && (
-          <View style={{ alignItems: 'center', marginBottom: 20 }}>
-            <Pressable onPress={generateNewPuzzle} style={styles.topButton}>
-              <Text style={styles.buttonText}>New Puzzle</Text>
-            </Pressable>
-          </View>
-        )}
       </View>
+      <View style={{ flex: 1 }}>
+      {!notStopped && (
+        <Pressable
+          style={[styles.topButton, { alignSelf: 'center', marginTop: 20 }]}
+          onPress={() => {
+            const { puzzle: newPuzzle, completedPuzzle: newSolution } = generateSudokuPuzzle(25);
+            setGrid(newPuzzle);
+            setCompletedPuzzle(newSolution);
+            setInitialPuzzle(JSON.parse(JSON.stringify(newPuzzle)));
+            setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
+            setNotStopped(true);
+            setFocusedCell({ row: null, col: null });
+            setSelectedValue(null);
+          }}
+        >
+          <Text style={styles.buttonText}>New Puzzle</Text>
+        </Pressable>
+      )}
+      </View>
+
+
     </TouchableWithoutFeedback>
   );
+  
 };
 
 const styles = StyleSheet.create({
@@ -247,6 +308,9 @@ const styles = StyleSheet.create({
   rightBorder: {
     borderRightWidth: 3,
   },
+  boxHighlight: {
+    backgroundColor: '#fceabb',
+  },  
   correctCell: {
     backgroundColor: '#ccffcc',
   },
@@ -263,17 +327,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#ccc',
   },
-  leftHeader: {
-    flexDirection: 'column',
-  },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
   },
+  level: {
+    fontSize: 14,
+    color: '#666',
+  },
   rightButtons: {
     flexDirection: 'row',
-    gap: 2,
   },
   topButton: {
     backgroundColor: '#4CAF50',
@@ -287,9 +351,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
+  
 });
 
 export default SudokuGrid;
+
 
 // import React, { useEffect, useState } from 'react';
 // import { View, Text, Button, StyleSheet } from 'react-native';

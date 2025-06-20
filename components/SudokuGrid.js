@@ -4,10 +4,12 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateSudokuPuzzle } from './sudokuGenerator';
 
-const { puzzle: initialPuzzle, completedPuzzle } = generateSudokuPuzzle(25);
 
 
-const SUDOKU_PUZZLE_KEY = 'sudokuPuzzle';
+const SUDOKU_PUZZLE_KEY = 'sudoku_current';
+const SUDOKU_INITIAL_KEY = 'sudoku_initial';
+const SUDOKU_SOLUTION_KEY = 'sudoku_solution';
+
 
 const SudokuGrid = () => {
   const [grid, setGrid] = useState(null);
@@ -21,91 +23,87 @@ const SudokuGrid = () => {
   const [notStopped, setNotStopped] = useState(true);
 
   useEffect(() => {
-    const loadOrGeneratePuzzle = async () => {
+    const loadPuzzle = async () => {
       try {
-        const savedData = await AsyncStorage.getItem(SUDOKU_PUZZLE_KEY);
+        const [saved, init, solution] = await Promise.all([
+          AsyncStorage.getItem(SUDOKU_PUZZLE_KEY),
+          AsyncStorage.getItem(SUDOKU_INITIAL_KEY),
+          AsyncStorage.getItem(SUDOKU_SOLUTION_KEY),
+        ]);
   
-        if (savedData) {
-          console.log("Loading Puzzle and Completed: ",puzzle, "\n\n", completedPuzzle);
-          const { puzzle, completedPuzzle: solution, initialPuzzle: initialPuzzle } = JSON.parse(savedData);
-          setGrid(puzzle);
-          setInitialPuzzle(initialPuzzle);
-          setCompletedPuzzle(solution);
+        if (saved && init && solution) {
+          setGrid(JSON.parse(saved));
+          setInitialPuzzle(JSON.parse(init));
+          setCompletedPuzzle(JSON.parse(solution));
         } else {
-          generateNewPuzzle();
+          await generateNewPuzzle(); // fallback if any are missing
         }
       } catch (e) {
         console.error('Failed to load puzzle:', e);
-        generateNewPuzzle();
+        await generateNewPuzzle();
       }
     };
   
-    loadOrGeneratePuzzle();
+    loadPuzzle();
   }, []);
   
+  
 
-  const generateNewPuzzle = () => {
-    const { puzzle, completedPuzzle: solution } = generateSudokuPuzzle(35);
-    setGrid(puzzle);
-    setInitialPuzzle(JSON.parse(JSON.stringify(puzzle)));
-    setCompletedPuzzle(solution);
-    setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
-    setNotStopped(true);
-    setFocusedCell({ row: null, col: null });
-    setSelectedValue(null);
+const generateNewPuzzle = async () => {
+  const { puzzle, completedPuzzle: solution } = generateSudokuPuzzle(25);
+  const deepPuzzle = JSON.parse(JSON.stringify(puzzle));
 
-    // Save both to AsyncStorage
-    console.log("Saved Puzzle and Completed: ",puzzle, "\n\n",completedPuzzle);
-    AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify({
-      puzzle,
-      completedPuzzle: solution,
-      initialPuzzle: puzzle,
-    })).catch(err =>
-      console.error('Failed to save puzzle:', err)
-    );
-  };
+  setGrid(deepPuzzle);
+  setInitialPuzzle(deepPuzzle);
+  setCompletedPuzzle(solution);
+  setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
+  setNotStopped(true);
+  setFocusedCell({ row: null, col: null });
+  setSelectedValue(null);
 
-  const resetGame = async () => {
-    const reset = JSON.parse(JSON.stringify(initialPuzzle));
-    setGrid(reset);
-    setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
-    setNotStopped(true);
-    setFocusedCell({ row: null, col: null });
-    setSelectedValue(null);
+  try {
+    await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(deepPuzzle));
+    await AsyncStorage.setItem(SUDOKU_INITIAL_KEY, JSON.stringify(deepPuzzle));
+    await AsyncStorage.setItem(SUDOKU_SOLUTION_KEY, JSON.stringify(solution));
+  } catch (e) {
+    console.error('Failed to save puzzle:', e);
+  }
+};
 
-    try {
-      await AsyncStorage.setItem(
-        SUDOKU_PUZZLE_KEY,
-        JSON.stringify({
-          puzzle: reset,
-          completedPuzzle: completedPuzzle,
-          initialPuzzle: reset,
-        })
-      );
-    } catch (e) {
-      console.error('Failed to save puzzle:', e);
+const resetGame = async () => {
+  try {
+    const init = await AsyncStorage.getItem(SUDOKU_INITIAL_KEY);
+
+    if (init) {
+      const resetPuzzle = JSON.parse(init);
+      setGrid(resetPuzzle);
+      setFocusedCell({ row: null, col: null });
+      setSelectedValue(null);
+      setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
+      setNotStopped(true);
+      await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(resetPuzzle));
+    } else {
+      generateNewPuzzle();
     }
-  };
+  } catch (e) {
+    console.error('Failed to reset puzzle:', e);
+  }
+};
+
 
   const handleChange = async (text, row, col) => {
     const newGrid = [...grid];
     const value = parseInt(text);
     newGrid[row][col] = isNaN(value) ? null : value;
     setGrid(newGrid);
-
+  
     try {
-      await AsyncStorage.setItem(
-        SUDOKU_PUZZLE_KEY,
-        JSON.stringify({
-          puzzle: newGrid,
-          completedPuzzle: completedPuzzle, // make sure this is the current one!
-          initialPuzzle: initialPuzzle,
-        })
-      );
+      await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(newGrid));
     } catch (e) {
       console.error('Failed to save puzzle:', e);
     }
   };
+  
 
 
   const checkPuzzle = () => {

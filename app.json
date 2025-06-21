@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "react-native-course",
+    "name": "Play Sudoku",
     "slug": "react-native-course",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,10 +20,16 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.abeer.hussain94.reactnativecourse"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0f333232-cf86-40bd-bfa2-dc3df137b662"
+      }
     }
   }
 }

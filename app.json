@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.myApp.play_sudoku"
+      "bundleIdentifier": "com.myApp.playSudoku"
     },
     "android": {
       "adaptiveIcon": {

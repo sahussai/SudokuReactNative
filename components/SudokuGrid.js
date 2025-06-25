@@ -44,14 +44,22 @@ const SudokuGrid = () => {
     const loadPuzzle = async () => {
       try {
         const savedPuzzle = await AsyncStorage.getItem(SUDOKU_PUZZLE_KEY);
-        console.log("Loading puzzle. savedPuzzle is " + savedPuzzle)
-        const initialPuzzleCopy = savedPuzzle ? JSON.parse(savedPuzzle) :  JSON.parse(JSON.stringify(initialPuzzle));
-        setGrid(initialPuzzleCopy);
+        console.log("Loading puzzle. savedPuzzle is " + savedPuzzle);
+    
+        const parsedPuzzle = savedPuzzle ? JSON.parse(savedPuzzle) : null;
+    
+        if (
+          Array.isArray(parsedPuzzle)
+        ) {
+          setGrid(parsedPuzzle);
+        } else {
+          setGrid(JSON.parse(JSON.stringify(initialPuzzle)));
+        }
       } catch (e) {
         console.error('Failed to load puzzle:', e);
-      };
-
+        setGrid(JSON.parse(JSON.stringify(initialPuzzle)));
       }
+    };
     loadPuzzle();
   }, []);
 

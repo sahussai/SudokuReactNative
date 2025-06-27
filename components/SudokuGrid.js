@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback, SafeAreaView } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateSudokuPuzzle } from './sudokuGenerator';
 
 
-
 const SUDOKU_PUZZLE_KEY = 'sudoku_current';
 const SUDOKU_INITIAL_KEY = 'sudoku_initial';
 const SUDOKU_SOLUTION_KEY = 'sudoku_solution';
+const SUDOKU_TIMER_KEY = 'sudokuTimer';
 
 
 const SudokuGrid = () => {
@@ -21,6 +21,9 @@ const SudokuGrid = () => {
   const [focusedCell, setFocusedCell] = useState({ row: null, col: null });
   const [selectedValue, setSelectedValue] = useState(null);
   const [notStopped, setNotStopped] = useState(true);
+  const [secondsElapsed, setSecondsElapsed] = useState(0);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const timerRef = useRef(null);
 
   useEffect(() => {
     const loadPuzzle = async () => {
@@ -43,9 +46,52 @@ const SudokuGrid = () => {
         await generateNewPuzzle();
       }
     };
-  
+
+    const loadTimer = async () => {
+      try {
+        const savedTime = await AsyncStorage.getItem(SUDOKU_TIMER_KEY);
+        if (savedTime) {
+          setSecondsElapsed(parseInt(savedTime));
+          startTimer();
+        }
+      } catch (e) {
+        console.error('Failed to load timer:', e);
+      }
+    };
+
     loadPuzzle();
+
+    loadTimer();
+
+    return stopTimer;
   }, []);
+  
+  const startTimer = () => {
+    setTimerRunning(true);
+    timerRef.current = setInterval(() => {
+      setSecondsElapsed(prev => {
+        const newTime = prev + 1;
+        AsyncStorage.setItem(SUDOKU_TIMER_KEY, JSON.stringify(newTime));
+        return newTime;
+      });
+    }, 1000);
+  };
+
+  const stopTimer = () => {
+    setTimerRunning(false);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const resetTimer = async () => {
+    stopTimer();
+    setSecondsElapsed(0);
+    await AsyncStorage.removeItem(SUDOKU_TIMER_KEY);
+  };
+  
+  
   
   
 
@@ -68,6 +114,9 @@ const generateNewPuzzle = async () => {
   } catch (e) {
     console.error('Failed to save puzzle:', e);
   }
+
+  await resetTimer();
+  startTimer();
 };
 
 const resetGame = async () => {
@@ -88,6 +137,8 @@ const resetGame = async () => {
   } catch (e) {
     console.error('Failed to reset puzzle:', e);
   }
+  await resetTimer();
+  startTimer();  
 };
 
 
@@ -124,6 +175,8 @@ const resetGame = async () => {
       }
     }
     setCorrectnessGrid(newCorrectnessGrid);
+    setNotStopped(false);
+    stopTimer();
 
     Alert.alert(
       'Results:',
@@ -187,12 +240,18 @@ const resetGame = async () => {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1, justifyContent: 'space-around' }}>
         <View style={styles.topBar}>
-          <View style={styles.leftHeader}>
-            <Text style={styles.title}>Sudoku App</Text>
-            <Text style={styles.level}>Level 1</Text>
-          </View>
+          <Text style={styles.title}>Sudoku App</Text>
+            <View style={{ alignItems: 'center', marginVertical: 10 }}>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: notStopped ? '#333' : '#4CAF50', }}>
+                {Math.floor(secondsElapsed / 60)
+                  .toString()
+                  .padStart(2, '0')}
+                :
+                {(secondsElapsed % 60).toString().padStart(2, '0')}
+              </Text>
+            </View>
           <View style={styles.rightButtons}>
             <Pressable onPress={resetGame} style={styles.topButton}>
             <AntDesign name="reload1" size={24} color="white" />
@@ -239,28 +298,15 @@ const resetGame = async () => {
             </View>
           ))}
         </View>
-      </View>
-      <View style={{ flex: 1 }}>
-      {!notStopped && (
-        <Pressable
-          style={[styles.topButton, { alignSelf: 'center', marginTop: 20 }]}
-          onPress={() => {
-            const { puzzle: newPuzzle, completedPuzzle: newSolution } = generateSudokuPuzzle(25);
-            setGrid(newPuzzle);
-            setCompletedPuzzle(newSolution);
-            setInitialPuzzle(JSON.parse(JSON.stringify(newPuzzle)));
-            setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
-            setNotStopped(true);
-            setFocusedCell({ row: null, col: null });
-            setSelectedValue(null);
-          }}
-        >
-          <Text style={styles.buttonText}>New Puzzle</Text>
-        </Pressable>
-      )}
-      </View>
 
-
+        {!notStopped && (
+          <View style={{ alignItems: 'center', marginBottom:200 }}>
+            <Pressable onPress={generateNewPuzzle} style={styles.bottomButton}>
+              <Text style={styles.buttonText}>New Puzzle</Text>
+            </Pressable>
+          </View>
+        )}
+      </SafeAreaView>
     </TouchableWithoutFeedback>
   );
   
@@ -321,7 +367,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 10,
     paddingVertical: 15,
-    marginTop: 50,
+    marginTop: 0,
     borderBottomWidth: 1,
     borderColor: '#ccc',
   },
@@ -344,10 +390,17 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginLeft: 10,
   },
+  bottomButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+    marginLeft: 10,
+  },
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 18,
   },
   
 });

@@ -103,11 +103,13 @@ const SudokuGrid = () => {
     setCorrectnessGrid(newCorrectnessGrid);
 
     Alert.alert(
-    'Results:',
+      'Results:',
       hasError ? 'Some answers are incorrect.' : 'All correct! Well done!',
+      [
+        { text: "OK"}
+      ],
       { cancelable: false }
     )
-    
   };
 
   const resetGame = async () => {
@@ -142,8 +144,6 @@ const SudokuGrid = () => {
       ]
     );
   };
-  
-  
   
 
   const applyStyles = (rowIndex, colIndex) => {

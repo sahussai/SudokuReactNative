@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback, SafeAreaView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateSudokuPuzzle } from './sudokuGenerator';
@@ -9,6 +10,8 @@ const SUDOKU_PUZZLE_KEY = 'sudoku_current';
 const SUDOKU_INITIAL_KEY = 'sudoku_initial';
 const SUDOKU_SOLUTION_KEY = 'sudoku_solution';
 const SUDOKU_TIMER_KEY = 'sudokuTimer';
+const SETTINGS_KEY = 'sudokuSettings';
+const PREV_SETTINGS_Key = 'lastUsedDifficulty';
 
 
 const SudokuGrid = () => {
@@ -24,28 +27,57 @@ const SudokuGrid = () => {
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
   const timerRef = useRef(null);
+  const [highlightEnabled, setHighlightEnabled] = useState(true);
+  const [difficulty, setDifficulty] = useState('Medium');
+  const [hasError, setHasError] = useState(false);
+  const DIFFICULTY_K_MAP = {
+    Easy: 25,
+    Medium: 40,
+    Hard: 50,
+  };
+
 
   useEffect(() => {
     const loadPuzzle = async () => {
       try {
-        const [saved, init, solution] = await Promise.all([
+        const [saved, init, solution, settings, lastUsedDifficulty] = await Promise.all([
           AsyncStorage.getItem(SUDOKU_PUZZLE_KEY),
           AsyncStorage.getItem(SUDOKU_INITIAL_KEY),
           AsyncStorage.getItem(SUDOKU_SOLUTION_KEY),
+          AsyncStorage.getItem(SETTINGS_KEY),
+          AsyncStorage.getItem(PREV_SETTINGS_Key)
         ]);
+
+        if (settings) {
+          const parsed = JSON.parse(settings);
+    
+          if (parsed.difficulty !== lastUsedDifficulty) {
+            await generateNewPuzzle(parsed.difficulty);
+            await AsyncStorage.setItem('lastUsedDifficulty', parsed.difficulty);
+            setDifficulty(parsed.difficulty);
+            setHighlightEnabled(parsed.highlightEnabled);
+            return;
+          }
+    
+          setDifficulty(parsed.difficulty);
+          setHighlightEnabled(parsed.highlightEnabled);
+        }
+        
   
         if (saved && init && solution) {
           setGrid(JSON.parse(saved));
           setInitialPuzzle(JSON.parse(init));
           setCompletedPuzzle(JSON.parse(solution));
         } else {
-          await generateNewPuzzle(); // fallback if any are missing
+          await generateNewPuzzle(difficulty); // fallback if any are missing
         }
       } catch (e) {
         console.error('Failed to load puzzle:', e);
-        await generateNewPuzzle();
+        await generateNewPuzzle(difficulty);
       }
     };
+
+    
 
     const loadTimer = async () => {
       try {
@@ -58,7 +90,6 @@ const SudokuGrid = () => {
         console.error('Failed to load timer:', e);
       }
     };
-
     loadPuzzle();
 
     loadTimer();
@@ -95,8 +126,14 @@ const SudokuGrid = () => {
   
   
 
-const generateNewPuzzle = async () => {
-  const { puzzle, completedPuzzle: solution } = generateSudokuPuzzle(25);
+const generateNewPuzzle = async (passedDifficulty) => {
+  const kValue = DIFFICULTY_K_MAP[passedDifficulty] || 45;
+  console.log("DIFFICULTY_K_MAP[passedDifficulty]): ", DIFFICULTY_K_MAP[passedDifficulty]);
+  console.log("kValue: ", kValue);
+  console.log("DIFFICULTY_K_MAP: ", DIFFICULTY_K_MAP);
+  console.log("difficulty: ", difficulty);
+  const { puzzle, completedPuzzle: solution } = generateSudokuPuzzle(kValue);
+  await AsyncStorage.setItem('lastUsedDifficulty', passedDifficulty);
   const deepPuzzle = JSON.parse(JSON.stringify(puzzle));
 
   setGrid(deepPuzzle);
@@ -106,6 +143,7 @@ const generateNewPuzzle = async () => {
   setNotStopped(true);
   setFocusedCell({ row: null, col: null });
   setSelectedValue(null);
+  setHasError(false);
 
   try {
     await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(deepPuzzle));
@@ -132,12 +170,14 @@ const resetGame = async () => {
       setNotStopped(true);
       await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(resetPuzzle));
     } else {
-      generateNewPuzzle();
+      generateNewPuzzle(difficulty);
     }
   } catch (e) {
     console.error('Failed to reset puzzle:', e);
   }
+  await AsyncStorage.setItem('lastUsedDifficulty', difficulty);
   await resetTimer();
+  setHasError(false);
   startTimer();  
 };
 
@@ -161,8 +201,8 @@ const resetGame = async () => {
     const newCorrectnessGrid = Array(9).fill(null).map(() => Array(9).fill(null));
     let numberOfCorrect = 0;
     setNotStopped(false);
-    let hasError = false;
-  
+    let hasAnyError = false;
+
     for (let row = 0; row < 9; row++) {
       for (let col = 0; col < 9; col++) {
         if (grid[row][col] === completedPuzzle[row][col]) {
@@ -170,13 +210,16 @@ const resetGame = async () => {
           numberOfCorrect++;
         } else {
           newCorrectnessGrid[row][col] = false;
-          hasError = true;
+          hasAnyError = true;
         }
       }
     }
+    
     setCorrectnessGrid(newCorrectnessGrid);
+    setHasError(hasAnyError);
     setNotStopped(false);
     stopTimer();
+    
 
     Alert.alert(
       'Results:',
@@ -225,14 +268,14 @@ const resetGame = async () => {
   
     return [
       styles.cell,
-      (focusedCell.row === rowIndex || focusedCell.col === colIndex || inSameBox) &&
+      highlightEnabled && (focusedCell.row === rowIndex || focusedCell.col === colIndex || inSameBox) &&
         focusedCell.row !== null &&
         focusedCell.col !== null &&
         styles.relatedCell,
       focusedCell.row === rowIndex &&
         focusedCell.col === colIndex &&
         styles.focusedCell,
-      selectedValue !== null &&
+      highlightEnabled && selectedValue !== null &&
         cellValue === selectedValue &&
         styles.sameValueCell,
       rowIndex % 3 === 2 && rowIndex !== 8 ? styles.bottomBorder : null,
@@ -251,10 +294,11 @@ const resetGame = async () => {
   }
   
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={{ flex: 1, justifyContent: 'space-around' }}>
+      <View style={{ flex: 1, justifyContent: 'space-around' }}>
         <View style={styles.topBar}>
-          <Text style={styles.title}>Sudoku App</Text>
+          <Text style={styles.title}>{difficulty}</Text>
             <View style={{ alignItems: 'center', marginVertical: 10 }}>
               <Text style={{ fontSize: 20, fontWeight: 'bold', color: notStopped ? '#333' : '#4CAF50', }}>
                 {Math.floor(secondsElapsed / 60)
@@ -312,14 +356,20 @@ const resetGame = async () => {
         </View>
 
         {!notStopped && (
-          <View style={{ alignItems: 'center', marginBottom:200 }}>
-            <Pressable onPress={generateNewPuzzle} style={styles.bottomButton}>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 200 }}>
+            {hasError && (
+              <Pressable onPress={resetGame} style={styles.bottomButton}>
+                <Text style={styles.buttonText}>Retry</Text>
+              </Pressable>
+            )}
+            <Pressable onPress={() => generateNewPuzzle(difficulty)} style={styles.bottomButton}>
               <Text style={styles.buttonText}>New Puzzle</Text>
             </Pressable>
           </View>
         )}
-      </SafeAreaView>
+      </View>
     </TouchableWithoutFeedback>
+    </SafeAreaView>
   );
   
 };
@@ -327,7 +377,6 @@ const resetGame = async () => {
 const styles = StyleSheet.create({
   board: {
     flex: 1,
-    marginTop: 20,
     padding: 13,
     backgroundColor: '#fff',
   },
@@ -379,7 +428,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 10,
     paddingVertical: 15,
-    marginTop: 0,
     borderBottomWidth: 1,
     borderColor: '#ccc',
   },

@@ -188,6 +188,12 @@ const resetGame = async () => {
     )
   };
 
+  const handleCellPress = (row, col) => {
+    setFocusedCell({ row, col });
+    const value = grid[row][col];
+    setSelectedValue(value !== null ? value : null);
+  };
+
   const handleFinishedPress = () => {
     Alert.alert(
       'Confirm Completion',
@@ -235,9 +241,15 @@ const resetGame = async () => {
       isCorrect === false && styles.incorrectCell,
     ];
   };
-  
-  
 
+  if (!grid || !initialPuzzle || !completedPuzzle) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Loading puzzle...</Text>
+      </View>
+    );
+  }
+  
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <SafeAreaView style={{ flex: 1, justifyContent: 'space-around' }}>
@@ -375,10 +387,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-  },
-  level: {
-    fontSize: 14,
-    color: '#666',
   },
   rightButtons: {
     flexDirection: 'row',

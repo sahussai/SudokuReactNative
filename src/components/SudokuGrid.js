@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback } from 'react-native';
-import AntDesign from '@expo/vector-icons/AntDesign';
+import {
+  Alert,
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  Keyboard,
+  TouchableWithoutFeedback,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TopBar } from './topBar';
 
 const initialPuzzle = [
   [5, 3, null, null, 7, null, null, null, null],
@@ -26,17 +35,16 @@ const completedPuzzle = [
   [3, 4, 5, 2, 8, 6, 1, 7, 9],
 ];
 
-
 const SUDOKU_PUZZLE_KEY = 'sudokuPuzzle';
-
-
 
 const SudokuGrid = () => {
   const [grid, setGrid] = useState(initialPuzzle);
   const [focusedCell, setFocusedCell] = useState({ row: null, col: null });
   const [selectedValue, setSelectedValue] = useState(null);
   const [correctnessGrid, setCorrectnessGrid] = useState(
-    Array(9).fill(null).map(() => Array(9).fill(null))
+    Array(9)
+      .fill(null)
+      .map(() => Array(9).fill(null))
   );
   const [notStopped, setNotStopped] = useState(true);
 
@@ -44,13 +52,11 @@ const SudokuGrid = () => {
     const loadPuzzle = async () => {
       try {
         const savedPuzzle = await AsyncStorage.getItem(SUDOKU_PUZZLE_KEY);
-        console.log("Loading puzzle. savedPuzzle is " + savedPuzzle);
-    
+        console.log('Loading puzzle. savedPuzzle is ' + savedPuzzle);
+
         const parsedPuzzle = savedPuzzle ? JSON.parse(savedPuzzle) : null;
-    
-        if (
-          Array.isArray(parsedPuzzle)
-        ) {
+
+        if (Array.isArray(parsedPuzzle)) {
           setGrid(parsedPuzzle);
         } else {
           setGrid(JSON.parse(JSON.stringify(initialPuzzle)));
@@ -62,7 +68,6 @@ const SudokuGrid = () => {
     };
     loadPuzzle();
   }, []);
-
 
   const handleChange = async (text, row, col) => {
     const newGrid = [...grid];
@@ -84,16 +89,16 @@ const SudokuGrid = () => {
   };
 
   const checkPuzzle = () => {
-    const newCorrectnessGrid = Array(9).fill(null).map(() => Array(9).fill(null));
-    let numberOfCorrect = 0;
+    const newCorrectnessGrid = Array(9)
+      .fill(null)
+      .map(() => Array(9).fill(null));
     setNotStopped(false);
     let hasError = false;
-  
+
     for (let row = 0; row < 9; row++) {
       for (let col = 0; col < 9; col++) {
         if (grid[row][col] === completedPuzzle[row][col]) {
           newCorrectnessGrid[row][col] = true;
-          numberOfCorrect++;
         } else {
           newCorrectnessGrid[row][col] = false;
           hasError = true;
@@ -105,11 +110,9 @@ const SudokuGrid = () => {
     Alert.alert(
       'Results:',
       hasError ? 'Some answers are incorrect.' : 'All correct! Well done!',
-      [
-        { text: "OK"}
-      ],
+      [{ text: 'OK' }],
       { cancelable: false }
-    )
+    );
   };
 
   const resetGame = async () => {
@@ -117,16 +120,23 @@ const SudokuGrid = () => {
     setGrid(initialPuzzleReset);
     setFocusedCell({ row: null, col: null });
     setSelectedValue(null);
-    setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
+    setCorrectnessGrid(
+      Array(9)
+        .fill(null)
+        .map(() => Array(9).fill(null))
+    );
     setNotStopped(true);
 
     try {
-      await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(initialPuzzleReset));
+      await AsyncStorage.setItem(
+        SUDOKU_PUZZLE_KEY,
+        JSON.stringify(initialPuzzleReset)
+      );
     } catch (e) {
       console.error('Failed to save puzzle:', e);
     }
-  };  
-  
+  };
+
   const handleFinishedPress = () => {
     Alert.alert(
       'Confirm Completion',
@@ -144,7 +154,6 @@ const SudokuGrid = () => {
       ]
     );
   };
-  
 
   const applyStyles = (rowIndex, colIndex) => {
     const cellValue = grid[rowIndex][colIndex];
@@ -153,12 +162,14 @@ const SudokuGrid = () => {
       focusedCell.col !== null &&
       Math.floor(rowIndex / 3) === Math.floor(focusedCell.row / 3) &&
       Math.floor(colIndex / 3) === Math.floor(focusedCell.col / 3);
-  
+
     const isCorrect = correctnessGrid[rowIndex][colIndex];
-  
+
     return [
       styles.cell,
-      (focusedCell.row === rowIndex || focusedCell.col === colIndex || inSameBox) &&
+      (focusedCell.row === rowIndex ||
+        focusedCell.col === colIndex ||
+        inSameBox) &&
         focusedCell.row !== null &&
         focusedCell.col !== null &&
         styles.relatedCell,
@@ -174,33 +185,20 @@ const SudokuGrid = () => {
       isCorrect === false && styles.incorrectCell,
     ];
   };
-  
-  
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={{ flex: 1 }}>
-        <View style={styles.topBar}>
-          <View style={styles.leftHeader}>
-            <Text style={styles.title}>Sudoku App</Text>
-            <Text style={styles.level}>Level 1</Text>
-          </View>
-          <View style={styles.rightButtons}>
-            <Pressable onPress={resetGame} style={styles.topButton}>
-            <AntDesign name="reload1" size={24} color="white" />
-            </Pressable>
-            <Pressable onPress={handleFinishedPress} style={styles.topButton}>
-              <AntDesign name="check" size={24} color="white" />
-            </Pressable>
-          </View>
-        </View>
-  
+        <TopBar
+          resetGameHandler={resetGame}
+          finishedGameHandler={handleFinishedPress}
+        />
         <View style={styles.board}>
           {grid.map((row, rowIndex) => (
             <View key={rowIndex} style={styles.row}>
               {row.map((cell, colIndex) => {
                 const isEditable = initialPuzzle[rowIndex][colIndex] === null;
-  
+
                 if (isEditable && notStopped) {
                   return (
                     <TextInput
@@ -209,7 +207,9 @@ const SudokuGrid = () => {
                       value={cell !== null ? cell.toString() : ''}
                       keyboardType="number-pad"
                       maxLength={1}
-                      onChangeText={text => handleChange(text, rowIndex, colIndex)}
+                      onChangeText={(text) =>
+                        handleChange(text, rowIndex, colIndex)
+                      }
                       onFocus={() => handleCellPress(rowIndex, colIndex)}
                       onBlur={() => setFocusedCell({ row: null, col: null })}
                     />
@@ -235,7 +235,6 @@ const SudokuGrid = () => {
       </View>
     </TouchableWithoutFeedback>
   );
-  
 };
 
 const styles = StyleSheet.create({
@@ -280,7 +279,7 @@ const styles = StyleSheet.create({
   },
   boxHighlight: {
     backgroundColor: '#fceabb',
-  },  
+  },
   correctCell: {
     backgroundColor: '#ccffcc',
   },
@@ -325,7 +324,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
-  
 });
 
 export default SudokuGrid;

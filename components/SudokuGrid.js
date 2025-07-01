@@ -128,10 +128,6 @@ const SudokuGrid = () => {
 
 const generateNewPuzzle = async (passedDifficulty) => {
   const kValue = DIFFICULTY_K_MAP[passedDifficulty] || 45;
-  console.log("DIFFICULTY_K_MAP[passedDifficulty]): ", DIFFICULTY_K_MAP[passedDifficulty]);
-  console.log("kValue: ", kValue);
-  console.log("DIFFICULTY_K_MAP: ", DIFFICULTY_K_MAP);
-  console.log("difficulty: ", difficulty);
   const { puzzle, completedPuzzle: solution } = generateSudokuPuzzle(kValue);
   await AsyncStorage.setItem('lastUsedDifficulty', passedDifficulty);
   const deepPuzzle = JSON.parse(JSON.stringify(puzzle));
@@ -223,7 +219,7 @@ const resetGame = async () => {
 
     Alert.alert(
       'Results:',
-      hasError ? 'Some answers are incorrect.' : 'All correct! Well done!',
+      hasAnyError ? 'Some answers are incorrect.' : 'All correct! Well done!',
       [
         { text: "OK"}
       ],

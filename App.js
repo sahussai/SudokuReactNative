@@ -1,16 +1,22 @@
-import { StyleSheet, Text, View, Button } from 'react-native';
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import MenuScreen from './components/MenuScreen';
+import SudokuGrid from './components/SudokuGrid';
+import SettingsScreen from './components/SettingsScreen';
 
-import SudokuGrid from './components/SudokuGrid'
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
-  return <SudokuGrid/>
+  return (
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Menu">
+        <Stack.Screen name="Menu" component={MenuScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Sudoku" component={SudokuGrid} options={{ title: 'Sudoku Game' }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+    
+  );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback, SafeAreaView } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback, SafeAreaView, ImageBackground } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateSudokuPuzzle } from './sudokuGenerator';
-
+import { useNavigation } from '@react-navigation/native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import background2 from "../assets/background2.jpg"
 
 const SUDOKU_PUZZLE_KEY = 'sudoku_current';
 const SUDOKU_INITIAL_KEY = 'sudoku_initial';
@@ -35,6 +36,7 @@ const SudokuGrid = () => {
     Medium: 40,
     Hard: 50,
   };
+  const navigation = useNavigation();
 
 
   useEffect(() => {
@@ -69,7 +71,7 @@ const SudokuGrid = () => {
           setInitialPuzzle(JSON.parse(init));
           setCompletedPuzzle(JSON.parse(solution));
         } else {
-          await generateNewPuzzle(difficulty); // fallback if any are missing
+          await generateNewPuzzle(difficulty);
         }
       } catch (e) {
         console.error('Failed to load puzzle:', e);
@@ -290,11 +292,22 @@ const resetGame = async () => {
   }
   
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <SafeAreaView style={{ flex: 1 }}>
+  <ImageBackground
+    source={background2}
+    resizeMode="cover"
+    style={{ flex: 1 }}
+  >
+
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={{ flex: 1, justifyContent: 'space-around' }}>
+      <View style={{ flex: 1 }}>
         <View style={styles.topBar}>
+        <Pressable onPress={() => navigation.navigate('Menu')} style={styles.topButton}>
+                  <Ionicons name="chevron-back" size={24} color="white" />
+            </Pressable>
+        <Pressable style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
           <Text style={styles.title}>{difficulty}</Text>
+          </Pressable>
             <View style={{ alignItems: 'center', marginVertical: 10 }}>
               <Text style={{ fontSize: 20, fontWeight: 'bold', color: notStopped ? '#333' : '#4CAF50', }}>
                 {Math.floor(secondsElapsed / 60)
@@ -305,10 +318,10 @@ const resetGame = async () => {
               </Text>
             </View>
           <View style={styles.rightButtons}>
-            <Pressable onPress={resetGame} style={styles.topButton}>
+            <Pressable onPress={resetGame} style={styles.topLeftButton}>
             <AntDesign name="reload1" size={24} color="white" />
             </Pressable>
-            <Pressable onPress={handleFinishedPress} style={styles.topButton}>
+            <Pressable onPress={handleFinishedPress} style={styles.topLeftButton}>
               <AntDesign name="check" size={24} color="white" />
             </Pressable>
           </View>
@@ -365,7 +378,9 @@ const resetGame = async () => {
         )}
       </View>
     </TouchableWithoutFeedback>
-    </SafeAreaView>
+    </ImageBackground>
+</SafeAreaView>
+
   );
   
 };
@@ -374,7 +389,6 @@ const styles = StyleSheet.create({
   board: {
     flex: 1,
     padding: 13,
-    backgroundColor: '#fff',
   },
   row: {
     flexDirection: 'row',
@@ -388,7 +402,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     textAlign: 'center',
     fontSize: 18,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.4)', 
   },
   fixedText: {
     fontSize: 18,
@@ -422,7 +436,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
+    paddingHorizontal: 13,
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderColor: '#ccc',
@@ -430,29 +444,41 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: 'black',
+    fontFamily: 'MeriendaRegular',
+    
   },
   rightButtons: {
     flexDirection: 'row',
   },
   topButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)', 
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 5,
-    marginLeft: 10,
+    margin:0,
+  },
+  topLeftButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.9)', 
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 5,
+    marginLeft: 8,
   },
   bottomButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)', 
+    borderWidth: 1,
+    borderColor: 'black',
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 10,
     marginLeft: 10,
   },
   buttonText: {
-    color: '#fff',
+    color: 'black',
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 23,
+    fontFamily: 'MeriendaRegular',
   },
   
 });

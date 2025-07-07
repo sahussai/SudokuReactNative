@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback, SafeAreaView, ImageBackground } from 'react-native';
+import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback, SafeAreaView, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Dimensions } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateSudokuPuzzle } from './sudokuGenerator';
@@ -37,7 +37,6 @@ const SudokuGrid = () => {
     Hard: 50,
   };
   const navigation = useNavigation();
-
 
   useEffect(() => {
     const loadPuzzle = async () => {
@@ -293,6 +292,11 @@ const resetGame = async () => {
   
   return (
     <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+    style={{ flex: 1 }}
+    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20} // tweak this if needed
+  >
   <ImageBackground
     source={background2}
     resizeMode="cover"
@@ -300,6 +304,10 @@ const resetGame = async () => {
   >
 
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+        >
       <View style={{ flex: 1 }}>
         <View style={styles.topBar}>
         <Pressable onPress={() => navigation.navigate('Menu')} style={styles.topButton}>
@@ -340,7 +348,12 @@ const resetGame = async () => {
                       value={cell !== null ? cell.toString() : ''}
                       keyboardType="number-pad"
                       maxLength={1}
-                      onChangeText={text => handleChange(text, rowIndex, colIndex)}
+                      onChangeText={text => {
+                        handleChange(text, rowIndex, colIndex);
+                        if (text.length === 1) {
+                          Keyboard.dismiss();
+                        }
+                      }}
                       onFocus={() => handleCellPress(rowIndex, colIndex)}
                       onBlur={() => setFocusedCell({ row: null, col: null })}
                     />
@@ -377,36 +390,48 @@ const resetGame = async () => {
           </View>
         )}
       </View>
+      </ScrollView>
     </TouchableWithoutFeedback>
     </ImageBackground>
+    </KeyboardAvoidingView>
 </SafeAreaView>
 
   );
   
 };
 
+const screenWidth = Dimensions.get('window').width;
+const boardSize = screenWidth * 0.9;
+const cellSize = boardSize / 9;
+const fontSize = cellSize * 0.35;
+
+
 const styles = StyleSheet.create({
   board: {
-    flex: 1,
-    padding: 13,
+    width: boardSize,
+    height: boardSize,
+    alignSelf: 'center',
+    marginVertical: 10,
   },
   row: {
     flexDirection: 'row',
   },
   cell: {
-    borderWidth: 1,
+    width: cellSize,
+    height: cellSize,
+    borderWidth: 0.5,
     borderColor: '#999',
-    width: 40,
-    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
     textAlign: 'center',
-    fontSize: 18,
+    textAlignVertical: 'center',
+    fontSize: fontSize,
     backgroundColor: 'rgba(255, 255, 255, 0.4)', 
   },
   fixedText: {
-    fontSize: 18,
+    fontSize: fontSize,
     textAlign: 'center',
+    textAlignVertical: 'center',
   },
   focusedCell: {
     backgroundColor: '#ffeb3b',
@@ -418,10 +443,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#aaffaa',
   },
   bottomBorder: {
-    borderBottomWidth: 3,
+    borderBottomWidth: 1,
   },
   rightBorder: {
-    borderRightWidth: 3,
+    borderRightWidth: 1,
   },
   boxHighlight: {
     backgroundColor: '#fceabb',
@@ -433,6 +458,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffcccc',
   },
   topBar: {
+    marginTop: Platform.OS === 'ios' ? 0 : 25,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -523,3 +549,4 @@ export default SudokuGrid;
 //   container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 //   text: { fontSize: 24, marginBottom: 10 },
 // });
+

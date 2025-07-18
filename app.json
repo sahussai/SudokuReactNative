@@ -4,13 +4,13 @@
     "slug": "react-native-course",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon2.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "white"
     },
     "ios": {
       "supportsTablet": true,
@@ -31,6 +31,9 @@
       "eas": {
         "projectId": "0f333232-cf86-40bd-bfa2-dc3df137b662"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Switch, Alert } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Switch, ImageBackground } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import background2 from "../assets/background2.jpg"
 
 
 const SETTINGS_KEY = 'sudokuSettings';
@@ -32,6 +33,11 @@ const SettingsScreen = () => {
   };
 
   return (
+    <ImageBackground
+    source={background2}
+    resizeMode="cover"
+    style={styles.image}
+  >
     <View style={styles.container}>
 
       <Text style={styles.label}>Difficulty:</Text>
@@ -53,6 +59,7 @@ const SettingsScreen = () => {
         <Switch
           value={highlightEnabled}
           onValueChange={setHighlightEnabled}
+          trackColor={{ false: "#767577", true: "black" }}
         />
       </View>
 
@@ -60,11 +67,12 @@ const SettingsScreen = () => {
         <Text style={styles.saveButtonText}>Confirm</Text>
       </Pressable>
     </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  container: { flex: 1, padding: 20 },
   header: { fontSize: 24, fontWeight: 'bold', marginBottom: 30 },
   label: { fontSize: 18, marginTop: 20 },
   option: {
@@ -74,7 +82,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   selectedOption: {
-    backgroundColor: '#4CAF50',
+    //backgroundColor: '#4CAF50',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', 
   },
   optionText: {
     color: '#000',
@@ -88,7 +97,8 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: 40,
-    backgroundColor: '#4CAF50',
+    //backgroundColor: '#4CAF50',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)', 
     padding: 14,
     borderRadius: 8,
     alignItems: 'center',
@@ -97,6 +107,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
   },
+  image: {
+    width: '100%',
+    height: '100%',
+    flex: 1,
+    resizeMode: 'cover',
+    justifyContent: 'center',
+  }
 });
 
 export default SettingsScreen;

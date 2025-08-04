@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback, SafeAreaView, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Dimensions } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { generateSudokuPuzzle } from './sudokuGenerator';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import background2 from "../assets/background2.jpg"
+import background2 from "../assets/background2.jpg";
+import { getSudoku } from 'sudoku-gen';
 
 const SUDOKU_PUZZLE_KEY = 'sudoku_current';
 const SUDOKU_INITIAL_KEY = 'sudoku_initial';
@@ -15,10 +15,11 @@ const SETTINGS_KEY = 'sudokuSettings';
 const PREV_SETTINGS_Key = 'lastUsedDifficulty';
 
 
+
 const SudokuGrid = () => {
-  const [grid, setGrid] = useState(null);
-  const [initialPuzzle, setInitialPuzzle] = useState(null);
-  const [completedPuzzle, setCompletedPuzzle] = useState(null);
+  const [grid, setGrid] = useState([]);
+  const [initialPuzzle, setInitialPuzzle] = useState([]);
+  const [completedPuzzle, setCompletedPuzzle] = useState([]);  
   const [correctnessGrid, setCorrectnessGrid] = useState(
     Array(9).fill(null).map(() => Array(9).fill(null))
   );
@@ -29,13 +30,8 @@ const SudokuGrid = () => {
   const [timerRunning, setTimerRunning] = useState(false);
   const timerRef = useRef(null);
   const [highlightEnabled, setHighlightEnabled] = useState(true);
-  const [difficulty, setDifficulty] = useState('Medium');
+  const [difficulty, setDifficulty] = useState('medium');
   const [hasError, setHasError] = useState(false);
-  const DIFFICULTY_K_MAP = {
-    Easy: 25,
-    Medium: 40,
-    Hard: 50,
-  };
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -98,6 +94,7 @@ const SudokuGrid = () => {
     return stopTimer;
   }, []);
   
+  
   const startTimer = () => {
     setTimerRunning(true);
     timerRef.current = setInterval(() => {
@@ -124,35 +121,48 @@ const SudokuGrid = () => {
   };
   
   
-  
-  
-
-const generateNewPuzzle = async (passedDifficulty) => {
-  const kValue = DIFFICULTY_K_MAP[passedDifficulty] || 45;
-  const { puzzle, completedPuzzle: solution } = generateSudokuPuzzle(kValue);
-  await AsyncStorage.setItem('lastUsedDifficulty', passedDifficulty);
-  const deepPuzzle = JSON.parse(JSON.stringify(puzzle));
-
-  setGrid(deepPuzzle);
-  setInitialPuzzle(deepPuzzle);
-  setCompletedPuzzle(solution);
-  setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
-  setNotStopped(true);
-  setFocusedCell({ row: null, col: null });
-  setSelectedValue(null);
-  setHasError(false);
-
-  try {
-    await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(deepPuzzle));
-    await AsyncStorage.setItem(SUDOKU_INITIAL_KEY, JSON.stringify(deepPuzzle));
-    await AsyncStorage.setItem(SUDOKU_SOLUTION_KEY, JSON.stringify(solution));
-  } catch (e) {
-    console.error('Failed to save puzzle:', e);
+  // Function to convert Sudoku string into a 2D array
+const convertTo2DArray = (sudokuString) => {
+  let grid = [];
+  for (let i = 0; i < 9; i++) {
+    let row = [];
+    for (let j = 0; j < 9; j++) {
+      const cell = sudokuString[i * 9 + j]; // Get the character at position i * 9 + j
+      row.push(cell === '-' ? null : parseInt(cell)); // Replace '-' with null, or parse the number
+    }
+    grid.push(row);
   }
-
-  await resetTimer();
-  startTimer();
+  return grid;
 };
+  
+  const generateNewPuzzle = async (passedDifficulty) => {
+    // Use getSudoku to get the puzzle and solution based on the difficulty
+    const { puzzle, solution } = getSudoku(passedDifficulty);
+    await AsyncStorage.setItem('lastUsedDifficulty', passedDifficulty);
+    const deepPuzzle = JSON.parse(JSON.stringify(convertTo2DArray(puzzle)));
+    const completedPuzzle = convertTo2DArray(solution);
+
+    setGrid(deepPuzzle);
+    setInitialPuzzle(deepPuzzle);
+    setCompletedPuzzle(completedPuzzle);
+    setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
+    setNotStopped(true);
+    setFocusedCell({ row: null, col: null });
+    setSelectedValue(null);
+    setHasError(false);
+  
+    try {
+      await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(deepPuzzle));
+      await AsyncStorage.setItem(SUDOKU_INITIAL_KEY, JSON.stringify(deepPuzzle));
+      await AsyncStorage.setItem(SUDOKU_SOLUTION_KEY, JSON.stringify(completedPuzzle));
+    } catch (e) {
+      console.error('Failed to save puzzle:', e);
+    }
+  
+    await resetTimer();
+    startTimer();
+  };
+  
 
 const resetGame = async () => {
   try {
@@ -282,7 +292,8 @@ const resetGame = async () => {
     ];
   };
 
-  if (!grid || !initialPuzzle || !completedPuzzle) {
+  // Only render the map function when grid, initialPuzzle, and completedPuzzle are valid
+  if (!grid || !initialPuzzle || !completedPuzzle || grid.length === 0) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Text>Loading puzzle...</Text>

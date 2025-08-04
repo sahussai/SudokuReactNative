@@ -9,7 +9,7 @@ const SETTINGS_KEY = 'sudokuSettings';
 
 
 const SettingsScreen = () => {
-  const [difficulty, setDifficulty] = useState('Medium');
+  const [difficulty, setDifficulty] = useState('medium');
   const [highlightEnabled, setHighlightEnabled] = useState(true);
   const navigation = useNavigation();
 
@@ -41,7 +41,7 @@ const SettingsScreen = () => {
     <View style={styles.container}>
 
       <Text style={styles.label}>Difficulty:</Text>
-      {['Easy', 'Medium', 'Hard'].map(level => (
+      {['easy', 'medium', 'hard', 'expert'].map(level => (
         <Pressable
           key={level}
           style={[

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, ImageBackground } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import AntDesign from '@expo/vector-icons/AntDesign';

@@ -32,8 +32,7 @@
         "projectId": "0f333232-cf86-40bd-bfa2-dc3df137b662"
       }
     },
-    "plugins": [
-      "expo-font"
-    ]
+    "plugins": ["expo-font"],
+    "assetBundlePatterns": ["**/*"]
   }
 }

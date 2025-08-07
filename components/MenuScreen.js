@@ -26,7 +26,10 @@ const MenuScreen = ({ navigation }) => {
         resizeMode="cover"
       >
         <View style={styles.container}>
+          
+        <View style={{ overflow: 'visible' }}>
           <Text style={styles.title}>Sudoku</Text>
+        </View>
 
           <Pressable style={styles.button} onPress={() => navigation.navigate('Sudoku')}>
             <Text style={styles.buttonText}>Play</Text>
@@ -44,6 +47,7 @@ const MenuScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    overflow: 'visible',
     marginBottom: 15,
     justifyContent: 'center',
     alignItems: 'center',
@@ -52,9 +56,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 70,
-    fontWeight: 'italic',
-    marginBottom: 30,
     fontFamily: 'BodoniModa',
+    marginBottom: 20,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    paddingRight: 10,
+    lineHeight: 90,
   },
   button: {
     backgroundColor: 'white',
@@ -74,7 +81,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 25,
     textAlign: 'center',
-    fontFamily: 'BodoniModa',
+    //fontFamily: 'BodoniModa',
   },
   image: {
     width: '100%',

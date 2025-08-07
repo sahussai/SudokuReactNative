@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: 'black',
-    fontFamily: 'MeriendaRegular',
+    //fontFamily: 'MeriendaRegular',
     
   },
   rightButtons: {
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
     color: 'black',
     fontWeight: 'bold',
     fontSize: 23,
-    fontFamily: 'MeriendaRegular',
+    //fontFamily: 'MeriendaRegular',
   },
   
 });

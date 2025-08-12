@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 70,
-    fontFamily: 'BodoniModa',
+    //fontFamily: 'BodoniModa',
     marginBottom: 20,
     includeFontPadding: false,
     textAlignVertical: 'center',

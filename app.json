@@ -4,9 +4,8 @@
     "slug": "react-native-course",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon2.png",
+    "icon": "./assets/icon3.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",

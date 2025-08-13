@@ -74,7 +74,7 @@ const SettingsScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
   header: { fontSize: 24, fontWeight: 'bold', marginBottom: 30 },
-  label: { fontSize: 18, marginTop: 20 },
+  label: { fontSize: 18, fontFamily:'MeriendaRegular', marginTop: 20 },
   option: {
     padding: 12,
     backgroundColor: '#eee',
@@ -88,6 +88,8 @@ const styles = StyleSheet.create({
   optionText: {
     color: '#000',
     fontSize: 16,
+    textTransform: 'capitalize',
+    fontFamily:'MeriendaRegular'
   },
   toggleContainer: {
     flexDirection: 'row',

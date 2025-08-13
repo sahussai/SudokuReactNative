@@ -52,11 +52,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    //backgroundColor: 'rgba(255, 255, 255, 0.5)'
   },
   title: {
     fontSize: 70,
-    //fontFamily: 'BodoniModa',
+    fontFamily: 'BodoniModa',
     marginBottom: 20,
     includeFontPadding: false,
     textAlignVertical: 'center',
@@ -81,7 +80,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 25,
     textAlign: 'center',
-    //fontFamily: 'BodoniModa',
   },
   image: {
     width: '100%',

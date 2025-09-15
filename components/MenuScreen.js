@@ -1,8 +1,9 @@
 import React, { useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ImageBackground, Image, Dimensions } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
-import AntDesign from '@expo/vector-icons/AntDesign';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import background from "../assets/background.jpg";
+import titleImage from "../assets/title2.png";  // 👈 import your title image
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -12,9 +13,12 @@ SplashScreen.setOptions({
   fade: true,
 });
 
+const { width } = Dimensions.get("window"); 
+const TITLE_WIDTH = width * 0.8;   // 80% of screen width
+const TITLE_HEIGHT = TITLE_WIDTH * 0.3; // adjust ratio based on your image
+
 const MenuScreen = ({ navigation }) => {
   const onLayoutRootView = useCallback(async () => {
-    // Wait until background image has loaded
     await SplashScreen.hideAsync();
   }, []);
 
@@ -26,17 +30,24 @@ const MenuScreen = ({ navigation }) => {
         resizeMode="cover"
       >
         <View style={styles.container}>
-          
-        <View style={{ overflow: 'visible' }}>
-          <Text style={styles.title}>Sudoku</Text>
-        </View>
+
+          {/* Replace Text with Scalable Image */}
+          <Image
+            source={titleImage}
+            style={{ 
+              width: TITLE_WIDTH, 
+              height: TITLE_HEIGHT, 
+              resizeMode: "contain", 
+              marginBottom: 40 
+            }}
+          />
 
           <Pressable style={styles.button} onPress={() => navigation.navigate('Sudoku')}>
             <Text style={styles.buttonText}>Play</Text>
           </Pressable>
 
           <Pressable style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
-            <AntDesign name="setting" size={25} color="black" />
+            <Ionicons name="settings-outline" size={24} color="black" />
           </Pressable>
         </View>
       </ImageBackground>
@@ -47,23 +58,12 @@ const MenuScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    overflow: 'visible',
     marginBottom: 15,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
-  title: {
-    fontSize: 70,
-    fontFamily: 'BodoniModa',
-    marginBottom: 20,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-    paddingRight: 10,
-    lineHeight: 90,
-  },
   button: {
-    backgroundColor: 'white',
     paddingVertical: 14,
     paddingHorizontal: 38,
     borderRadius: 100,
@@ -88,12 +88,6 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
     justifyContent: 'center',
   },
-  loader: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
-  }
-  
 });
 
 export default MenuScreen;

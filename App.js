@@ -15,8 +15,8 @@ export default function App() {
 
 
   const [fontsLoaded] = Font.useFonts({
-    'BodoniModa': require('./assets/fonts/Bodoni Moda 48pt Regular.ttf'),
-    'MeriendaRegular': require('./assets/fonts/Merienda Regular.ttf'),
+    //'BodoniModa': require('./assets/fonts/Bodoni Moda 48pt Regular.ttf'),
+    //'MeriendaRegular': require('./assets/fonts/Merienda Regular.ttf'),
     // add more fonts here
   });
 

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback, SafeAreaView, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Dimensions } from 'react-native';
+import { Alert, View, Text, TextInput, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback, ImageBackground, KeyboardAvoidingView, Platform, ScrollView, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import background2 from "../assets/background2.jpg";
 import { getSudoku } from 'sudoku-gen';
+import { useFocusEffect } from '@react-navigation/native';
 
 const SUDOKU_PUZZLE_KEY = 'sudoku_current';
 const SUDOKU_INITIAL_KEY = 'sudoku_initial';
@@ -13,7 +15,7 @@ const SUDOKU_SOLUTION_KEY = 'sudoku_solution';
 const SUDOKU_TIMER_KEY = 'sudokuTimer';
 const SETTINGS_KEY = 'sudokuSettings';
 const PREV_SETTINGS_Key = 'lastUsedDifficulty';
-
+const SUDOKU_STOPPED_KEY = 'sudokuStopped';
 
 
 const SudokuGrid = () => {
@@ -27,84 +29,130 @@ const SudokuGrid = () => {
   const [selectedValue, setSelectedValue] = useState(null);
   const [notStopped, setNotStopped] = useState(true);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
+  const [finalTime, setFinalTime] = useState(null);
   const [timerRunning, setTimerRunning] = useState(false);
   const timerRef = useRef(null);
   const [highlightEnabled, setHighlightEnabled] = useState(true);
   const [difficulty, setDifficulty] = useState('medium');
   const [hasError, setHasError] = useState(false);
   const navigation = useNavigation();
+  const [isLoaded, setIsLoaded] = useState(false);   // true after loadPuzzle finishes
+  const secondsRef = useRef(0);                      // keeps the latest seconds without causing re-renders
 
-  useEffect(() => {
-    const loadPuzzle = async () => {
-      try {
-        const [saved, init, solution, settings, lastUsedDifficulty] = await Promise.all([
+
+useFocusEffect(
+  React.useCallback(() => {
+    // when screen gains focus: start timer only if load finished and game is active
+    if (isLoaded && notStopped) {
+      // ensure no duplicate
+      stopTimer();
+      startTimer();
+    }
+
+    // on blur/unmount of focus: stop timer and persist the latest time
+    return () => {
+      stopTimer();
+      (async () => {
+        try {
+          await AsyncStorage.setItem(SUDOKU_TIMER_KEY, String(secondsRef.current));
+        } catch (e) {
+          console.error('Failed to save timer on blur', e);
+        }
+      })();
+    };
+  }, [isLoaded, notStopped])
+);
+
+useEffect(() => {
+  const loadPuzzle = async () => {
+    try {
+      const [saved, init, solution, settings, lastUsedDifficulty, stopped] =
+        await Promise.all([
           AsyncStorage.getItem(SUDOKU_PUZZLE_KEY),
           AsyncStorage.getItem(SUDOKU_INITIAL_KEY),
           AsyncStorage.getItem(SUDOKU_SOLUTION_KEY),
           AsyncStorage.getItem(SETTINGS_KEY),
-          AsyncStorage.getItem(PREV_SETTINGS_Key)
+          AsyncStorage.getItem(PREV_SETTINGS_Key),
+          AsyncStorage.getItem(SUDOKU_STOPPED_KEY),
         ]);
 
-        if (settings) {
-          const parsed = JSON.parse(settings);
-    
-          if (parsed.difficulty !== lastUsedDifficulty) {
-            await generateNewPuzzle(parsed.difficulty);
-            await AsyncStorage.setItem('lastUsedDifficulty', parsed.difficulty);
-            setDifficulty(parsed.difficulty);
-            setHighlightEnabled(parsed.highlightEnabled);
-            return;
-          }
-    
-          setDifficulty(parsed.difficulty);
-          setHighlightEnabled(parsed.highlightEnabled);
+      // apply settings (if any)
+      if (settings) {
+        const parsed = JSON.parse(settings);
+        setDifficulty(parsed.difficulty);
+        setHighlightEnabled(parsed.highlightEnabled);
+        if (parsed.difficulty !== lastUsedDifficulty) {
+          await generateNewPuzzle(parsed.difficulty);
+          await AsyncStorage.setItem(PREV_SETTINGS_Key, parsed.difficulty);
+          setIsLoaded(true);
+          return;
         }
-        
-  
-        if (saved && init && solution) {
-          setGrid(JSON.parse(saved));
-          setInitialPuzzle(JSON.parse(init));
-          setCompletedPuzzle(JSON.parse(solution));
-        } else {
-          await generateNewPuzzle(difficulty);
-        }
-      } catch (e) {
-        console.error('Failed to load puzzle:', e);
+      }
+
+      // If the game was stopped -> generate NEW puzzle (per your latest requirement)
+      if (stopped === 'true') {
+        await AsyncStorage.removeItem(SUDOKU_STOPPED_KEY);
+        await generateNewPuzzle(difficulty);
+        setIsLoaded(true);
+        return;
+      }
+
+      // Normal resume: restore board + timer
+      if (saved && init && solution) {
+        const parsedGrid = JSON.parse(saved);
+        const parsedInit = JSON.parse(init);
+        const parsedSolution = JSON.parse(solution);
+
+        setGrid(parsedGrid);
+        setInitialPuzzle(parsedInit);
+        setCompletedPuzzle(parsedSolution);
+
+        const savedTime = await AsyncStorage.getItem(SUDOKU_TIMER_KEY);
+        const startSeconds = savedTime ? parseInt(savedTime, 10) : 0;
+        setSecondsElapsed(startSeconds);
+        secondsRef.current = startSeconds;
+      } else {
         await generateNewPuzzle(difficulty);
       }
-    };
 
-    
+      setIsLoaded(true);
+    } catch (e) {
+      console.error('Failed to load puzzle:', e);
+      await generateNewPuzzle(difficulty);
+      setIsLoaded(true);
+    }
+  };
 
-    const loadTimer = async () => {
-      try {
-        const savedTime = await AsyncStorage.getItem(SUDOKU_TIMER_KEY);
-        if (savedTime) {
-          setSecondsElapsed(parseInt(savedTime));
-          startTimer();
-        }
-      } catch (e) {
-        console.error('Failed to load timer:', e);
-      }
-    };
-    loadPuzzle();
+  loadPuzzle();
+  // ensure interval cleaned up on unmount
+  return () => {
+    stopTimer();
+  };
+}, []);
 
-    loadTimer();
 
-    return stopTimer;
-  }, []);
-  
   
   const startTimer = () => {
+    // ensure no duplicate interval
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
     setTimerRunning(true);
     timerRef.current = setInterval(() => {
       setSecondsElapsed(prev => {
         const newTime = prev + 1;
-        AsyncStorage.setItem(SUDOKU_TIMER_KEY, JSON.stringify(newTime));
+        secondsRef.current = newTime;
+        // persist every tick (string)
+        AsyncStorage.setItem(SUDOKU_TIMER_KEY, String(newTime)).catch(e => {
+          console.error('Failed to save timer tick', e);
+        });
         return newTime;
       });
     }, 1000);
   };
+
 
   const stopTimer = () => {
     setTimerRunning(false);
@@ -117,8 +165,15 @@ const SudokuGrid = () => {
   const resetTimer = async () => {
     stopTimer();
     setSecondsElapsed(0);
-    await AsyncStorage.removeItem(SUDOKU_TIMER_KEY);
+    secondsRef.current = 0;
+    // persist zero so load won't pick up old value
+    try {
+      await AsyncStorage.setItem(SUDOKU_TIMER_KEY, '0');
+    } catch (e) {
+      console.error('Failed to write timer=0', e);
+    }
   };
+
   
   
   // Function to convert Sudoku string into a 2D array
@@ -135,37 +190,53 @@ const convertTo2DArray = (sudokuString) => {
   return grid;
 };
   
-  const generateNewPuzzle = async (passedDifficulty) => {
-    // Use getSudoku to get the puzzle and solution based on the difficulty
-    const { puzzle, solution } = getSudoku(passedDifficulty);
-    await AsyncStorage.setItem('lastUsedDifficulty', passedDifficulty);
-    const deepPuzzle = JSON.parse(JSON.stringify(convertTo2DArray(puzzle)));
-    const completedPuzzle = convertTo2DArray(solution);
+const generateNewPuzzle = async (passedDifficulty) => {
+  // stop any running timer while generating
+  stopTimer();
+  setSecondsElapsed(0);
+  secondsRef.current = 0;
+  try {
+    await AsyncStorage.setItem(SUDOKU_TIMER_KEY, '0');
+  } catch (e) {
+    console.error('Failed to set timer to 0 when generating', e);
+  }
 
-    setGrid(deepPuzzle);
-    setInitialPuzzle(deepPuzzle);
-    setCompletedPuzzle(completedPuzzle);
-    setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
-    setNotStopped(true);
-    setFocusedCell({ row: null, col: null });
-    setSelectedValue(null);
-    setHasError(false);
-  
-    try {
-      await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(deepPuzzle));
-      await AsyncStorage.setItem(SUDOKU_INITIAL_KEY, JSON.stringify(deepPuzzle));
-      await AsyncStorage.setItem(SUDOKU_SOLUTION_KEY, JSON.stringify(completedPuzzle));
-    } catch (e) {
-      console.error('Failed to save puzzle:', e);
-    }
-  
-    await resetTimer();
-    startTimer();
-  };
+  const { puzzle, solution } = getSudoku(passedDifficulty);
+  await AsyncStorage.setItem('lastUsedDifficulty', passedDifficulty);
+
+  const deepPuzzle = convertTo2DArray(puzzle);
+  const completedPuzzle = convertTo2DArray(solution);
+
+  setGrid(JSON.parse(JSON.stringify(deepPuzzle)));
+  setInitialPuzzle(JSON.parse(JSON.stringify(deepPuzzle)));
+  setCompletedPuzzle(completedPuzzle);
+  setCorrectnessGrid(Array(9).fill(null).map(() => Array(9).fill(null)));
+  setNotStopped(true);
+  setFocusedCell({ row: null, col: null });
+  setSelectedValue(null);
+  setHasError(false);
+
+  try {
+    await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(deepPuzzle));
+    await AsyncStorage.setItem(SUDOKU_INITIAL_KEY, JSON.stringify(deepPuzzle));
+    await AsyncStorage.setItem(SUDOKU_SOLUTION_KEY, JSON.stringify(completedPuzzle));
+  } catch (e) {
+    console.error('Failed to save puzzle:', e);
+  }
+
+  // don't start timer here; focus effect will start it if screen is focused
+};
+
+
   
 
 const resetGame = async () => {
   try {
+    stopTimer();
+    setSecondsElapsed(0);
+    secondsRef.current = 0;
+    await AsyncStorage.setItem(SUDOKU_TIMER_KEY, '0');
+
     const init = await AsyncStorage.getItem(SUDOKU_INITIAL_KEY);
 
     if (init) {
@@ -177,16 +248,18 @@ const resetGame = async () => {
       setNotStopped(true);
       await AsyncStorage.setItem(SUDOKU_PUZZLE_KEY, JSON.stringify(resetPuzzle));
     } else {
-      generateNewPuzzle(difficulty);
+      await generateNewPuzzle(difficulty);
     }
   } catch (e) {
     console.error('Failed to reset puzzle:', e);
+  } finally {
+    await AsyncStorage.setItem('lastUsedDifficulty', difficulty);
+    setHasError(false);
+    await AsyncStorage.removeItem(SUDOKU_STOPPED_KEY);
+    // startTimer will be started by focus effect if screen is focused
   }
-  await AsyncStorage.setItem('lastUsedDifficulty', difficulty);
-  await resetTimer();
-  setHasError(false);
-  startTimer();  
 };
+
 
 
   const handleChange = async (text, row, col) => {
@@ -204,39 +277,42 @@ const resetGame = async () => {
   
 
 
-  const checkPuzzle = () => {
+  const checkPuzzle = async () => {
     const newCorrectnessGrid = Array(9).fill(null).map(() => Array(9).fill(null));
-    let numberOfCorrect = 0;
-    setNotStopped(false);
     let hasAnyError = false;
 
     for (let row = 0; row < 9; row++) {
       for (let col = 0; col < 9; col++) {
         if (grid[row][col] === completedPuzzle[row][col]) {
           newCorrectnessGrid[row][col] = true;
-          numberOfCorrect++;
         } else {
           newCorrectnessGrid[row][col] = false;
           hasAnyError = true;
         }
       }
     }
-    
+
     setCorrectnessGrid(newCorrectnessGrid);
     setHasError(hasAnyError);
     setNotStopped(false);
+
+    // snapshot final time
+    setFinalTime(secondsRef.current);
+
+    // stop and persist 0 for next load
     stopTimer();
-    
+    await resetTimer(); // this now writes '0' to storage
+    await AsyncStorage.setItem(SUDOKU_STOPPED_KEY, 'true');
 
     Alert.alert(
       'Results:',
       hasAnyError ? 'Some answers are incorrect.' : 'All correct! Well done!',
-      [
-        { text: "OK"}
-      ],
+      [{ text: "OK" }],
       { cancelable: false }
-    )
+    );
   };
+
+
 
   const handleCellPress = (row, col) => {
     setFocusedCell({ row, col });
@@ -328,17 +404,23 @@ const resetGame = async () => {
           <Text style={styles.title}>{difficulty}</Text>
           </Pressable>
             <View style={{ alignItems: 'center', marginVertical: 10 }}>
-              <Text style={{ fontSize: 20, fontWeight: 'bold', color: notStopped ? '#333' : '#4CAF50', }}>
-                {Math.floor(secondsElapsed / 60)
-                  .toString()
-                  .padStart(2, '0')}
-                :
-                {(secondsElapsed % 60).toString().padStart(2, '0')}
-              </Text>
+            <Text style={{
+              fontSize: fontSize*1.3,
+              fontWeight: 'bold',
+              color: notStopped ? '#333' : '#4CAF50',
+            }}>
+              {Math.floor((notStopped ? secondsElapsed : finalTime) / 60)
+                .toString()
+                .padStart(2, '0')}
+              :
+              {((notStopped ? secondsElapsed : finalTime) % 60)
+                .toString()
+                .padStart(2, '0')}
+            </Text>
             </View>
           <View style={styles.rightButtons}>
             <Pressable onPress={resetGame} style={styles.topLeftButton}>
-            <AntDesign name="reload1" size={24} color="white" />
+            <AntDesign name="reload" size={24} color="white" />
             </Pressable>
             <Pressable onPress={handleFinishedPress} style={styles.topLeftButton}>
               <AntDesign name="check" size={24} color="white" />
@@ -351,15 +433,23 @@ const resetGame = async () => {
             <View key={rowIndex} style={styles.row}>
               {row.map((cell, colIndex) => {
                 const isEditable = initialPuzzle[rowIndex][colIndex] === null;
-                if (isEditable && notStopped) {
+
+                if (isEditable) {
+                  const value = cell !== null ? cell.toString() : '';
                   return (
                     <TextInput
                       key={colIndex}
                       style={applyStyles(rowIndex, colIndex)}
-                      value={cell !== null ? cell.toString() : ''}
+                      value={value}
                       keyboardType="number-pad"
                       maxLength={1}
+                      editable={notStopped} // 👈 only controls typing, not rendering
+                      selection={{
+                        start: value.length,
+                        end: value.length,
+                      }} // 👈 cursor always at end
                       onChangeText={text => {
+                        if (!notStopped) return;
                         handleChange(text, rowIndex, colIndex);
                         if (text.length === 1) {
                           Keyboard.dismiss();
@@ -387,6 +477,7 @@ const resetGame = async () => {
             </View>
           ))}
         </View>
+
 
         {!notStopped && (
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 200 }}>
@@ -469,7 +560,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffcccc',
   },
   topBar: {
-    marginTop: Platform.OS === 'ios' ? 0 : 25,
+    //marginTop: Platform.OS === 'ios' ? 0 : 25,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -479,7 +570,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
   },
   title: {
-    fontSize: 20,
+    fontSize: fontSize*1.3,
     fontWeight: 'bold',
     color: 'black',
     textTransform: 'capitalize',
@@ -513,7 +604,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'black',
     fontWeight: 'bold',
-    fontSize: 23,
+    fontSize: fontSize*1.3,
   },
   
 });

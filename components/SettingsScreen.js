@@ -74,7 +74,7 @@ const SettingsScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
   header: { fontSize: 24, fontWeight: 'bold', marginBottom: 30 },
-  label: { fontSize: 18, fontFamily:'MeriendaRegular', marginTop: 20 },
+  label: { fontSize: 18, marginTop: 20 },
   option: {
     padding: 12,
     backgroundColor: '#eee',
@@ -82,14 +82,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   selectedOption: {
-    //backgroundColor: '#4CAF50',
     backgroundColor: 'rgba(0, 0, 0, 0.5)', 
   },
   optionText: {
     color: '#000',
     fontSize: 16,
     textTransform: 'capitalize',
-    fontFamily:'MeriendaRegular'
+    //fontFamily:'MeriendaRegular'
   },
   toggleContainer: {
     flexDirection: 'row',
@@ -99,7 +98,6 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: 40,
-    //backgroundColor: '#4CAF50',
     backgroundColor: 'rgba(0, 0, 0, 0.9)', 
     padding: 14,
     borderRadius: 8,

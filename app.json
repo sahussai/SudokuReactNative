@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Play Sudoku",
+    "name": "Sudoku",
     "slug": "react-native-course",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon3.png",
+    "icon": "./assets/background_icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",

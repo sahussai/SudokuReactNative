@@ -166,13 +166,17 @@ useEffect(() => {
     stopTimer();
     setSecondsElapsed(0);
     secondsRef.current = 0;
-    // persist zero so load won't pick up old value
+
     try {
       await AsyncStorage.setItem(SUDOKU_TIMER_KEY, '0');
     } catch (e) {
       console.error('Failed to write timer=0', e);
     }
+
+    // 👇 Start ticking again
+    startTimer();
   };
+
 
   
   
@@ -256,7 +260,10 @@ const resetGame = async () => {
     await AsyncStorage.setItem('lastUsedDifficulty', difficulty);
     setHasError(false);
     await AsyncStorage.removeItem(SUDOKU_STOPPED_KEY);
-    // startTimer will be started by focus effect if screen is focused
+    
+    // 👇 FIX: restart timer immediately
+    setNotStopped(true);
+    startTimer();
   }
 };
 

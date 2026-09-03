@@ -23,12 +23,25 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableForceDarkOnLightThemes": false
+          }
+        }
+      ]
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "extra": {
       "eas": {
-        "projectId": "0f333232-cf86-40bd-bfa2-dc3df137b662"
+        "projectId": "53e5048c-1b3d-4063-89f5-7b79cd98f7d4"
       }
     },
-    "plugins": ["expo-font"],
-    "assetBundlePatterns": ["**/*"]
+    "owner": "syedzz"
   }
 }

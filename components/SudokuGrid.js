@@ -353,9 +353,9 @@ const resetGame = async () => {
       focusedCell.col !== null &&
       Math.floor(rowIndex / 3) === Math.floor(focusedCell.row / 3) &&
       Math.floor(colIndex / 3) === Math.floor(focusedCell.col / 3);
-  
+
     const isCorrect = correctnessGrid[rowIndex][colIndex];
-  
+
     return [
       styles.cell,
       highlightEnabled && (focusedCell.row === rowIndex || focusedCell.col === colIndex || inSameBox) &&
@@ -372,9 +372,9 @@ const resetGame = async () => {
       colIndex % 3 === 2 && colIndex !== 8 ? styles.rightBorder : null,
       isCorrect === true && styles.correctCell,
       isCorrect === false && styles.incorrectCell,
+      { color: '#000000' }, // 👈 force black no matter what — always last, always wins
     ];
   };
-
   // Only render the map function when grid, initialPuzzle, and completedPuzzle are valid
   if (!grid || !initialPuzzle || !completedPuzzle || grid.length === 0) {
     return (
@@ -451,6 +451,8 @@ const resetGame = async () => {
                       keyboardType="number-pad"
                       maxLength={1}
                       editable={notStopped} // 👈 only controls typing, not rendering
+                      selectionColor="#000000"        // 👈 also force cursor/selection tint to black
+                      underlineColorAndroid="transparent"  // 👈 removes Android's default underline, unrelated but good hygiene
                       selection={{
                         start: value.length,
                         end: value.length,
@@ -476,7 +478,7 @@ const resetGame = async () => {
                       }}
                       style={applyStyles(rowIndex, colIndex)}
                     >
-                      <Text style={styles.fixedText}>{cell}</Text>
+                       <Text style={[styles.fixedText, { color: '#000000' }]}>{cell}</Text>
                     </Pressable>
                   );
                 }
@@ -535,10 +537,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textAlignVertical: 'center',
     fontSize: fontSize,
+    color: 'black',
     backgroundColor: 'rgba(255, 255, 255, 0.4)', 
   },
   fixedText: {
     fontSize: fontSize,
+    color: 'black',
     textAlign: 'center',
     textAlignVertical: 'center',
   },

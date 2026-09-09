@@ -24,6 +24,17 @@ jobs:
         run: npm install -g eas-cli
 
       - name: Build Android App Bundle (AAB)
-        run: eas build --platform android --profile production --non-interactive --no-wait
+        run: eas build --platform android --profile production --non-interactive --json --no-wait=false > build-output.json
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Download AAB
+        run: |
+          URL=$(jq -r '.[0].artifacts.buildUrl' build-output.json)
+          curl -L -o app-release.aab "$URL"
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: app-release.aab

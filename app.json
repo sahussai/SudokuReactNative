@@ -6,18 +6,12 @@
     "orientation": "portrait",
     "icon": "./assets/background_icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/title2.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.myApp.playSudoku"
     },
     "android": {
       "icon": "./assets/background_icon.png",
-      "edgeToEdgeEnabled": true,
       "package": "com.abeer.hussain94.reactnativecourse"
     },
     "web": {
@@ -32,7 +26,8 @@
             "enableForceDarkOnLightThemes": false
           }
         }
-      ]
+      ],
+      "expo-splash-screen"
     ],
     "assetBundlePatterns": [
       "**/*"

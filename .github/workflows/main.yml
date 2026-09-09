@@ -24,7 +24,7 @@ jobs:
         run: npm install -g eas-cli
 
       - name: Build Android App Bundle (AAB)
-        run: eas build --platform android --profile production --non-interactive --json --no-wait | tee build-output.json
+        run: eas build --platform android --profile production --non-interactive --json | tee build-output.json
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 

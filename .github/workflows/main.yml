@@ -1,31 +1,20 @@
 name: Android App AAB Build
-
 on:
   push:
     branches:
       - main
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Setup repo
         uses: actions/checkout@v4
-      
+
       - name: Setup node
         uses: actions/setup-node@v4.0.2
         with:
           node-version: 20.x
           cache: 'npm'
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: Setup Expo
         uses: expo/expo-github-action@v8
@@ -38,11 +27,15 @@ jobs:
         run: npm ci
 
       - name: Build Android App Bundle (AAB)
-        run: eas build --platform android --profile production --non-interactive
+        run: eas build --platform android --profile production --non-interactive --json --no-wait=false > build-output.json
+
+      - name: Download AAB
+        run: |
+          URL=$(jq -r '.[0].artifacts.buildUrl' build-output.json)
+          curl -L -o app-release.aab "$URL"
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: |
-            dist/*.aab
+          path: app-release.aab
